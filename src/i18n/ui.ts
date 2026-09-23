@@ -13,7 +13,7 @@ export const ui = {
   en: {
     'meta.title': 'vstrofago — Projects, Notes, and other things',
     'meta.description':
-      'A running portfolio of experiments by vstrofago: code, writing, philosophy on video, productivity systems and music.',
+      'A running portfolio of experiments by vstrofago: code, writing, thinking, productivity systems and music.',
     'a11y.skip': 'Skip to content',
     'a11y.home': 'vstrofago, home',
     'a11y.mainNav': 'Main',
@@ -23,7 +23,7 @@ export const ui = {
     'hero.eyebrow': '00 / index',
     'hero.title': 'projects, notes, and other things.',
     'hero.lead':
-      'a running portfolio of experiments: code, writing, philosophy on video, productivity systems and music.',
+      'a running portfolio of experiments: code, writing, thinking, productivity systems and music.',
     'hero.ctaProjects': 'see projects',
     'hero.ctaBlog': 'read the blog ↗',
     'hero.prompt': 'dev / writing / thinking / systems / music',
@@ -46,7 +46,7 @@ export const ui = {
   es: {
     'meta.title': 'vstrofago — Proyectos, notas y otras cosas',
     'meta.description':
-      'Un portafolio vivo de experimentos de vstrofago: código, escritura, filosofía en video, sistemas de productividad y música.',
+      'Un portafolio vivo de experimentos de vstrofago: código, escritura, pensamientos, sistemas de productividad y música.',
     'a11y.skip': 'Saltar al contenido',
     'a11y.home': 'vstrofago, inicio',
     'a11y.mainNav': 'Principal',
@@ -56,7 +56,7 @@ export const ui = {
     'hero.eyebrow': '00 / índice',
     'hero.title': 'proyectos, notas y otras cosas.',
     'hero.lead':
-      'un portafolio vivo de experimentos: código, escritura, filosofía en video, sistemas de productividad y música.',
+      'un portafolio vivo de experimentos: código, escritura, pensamientos, sistemas de productividad y música.',
     'hero.ctaProjects': 'ver proyectos',
     'hero.ctaBlog': 'leer el blog ↗',
     'hero.prompt': 'dev / escritura / pensamiento / sistemas / música',
