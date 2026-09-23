@@ -4,7 +4,7 @@ import { useTranslations, type Lang } from '../i18n/ui';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const words = useTranslations(lang)('ticker');
-// The track holds the list twice and slides by half its width, so the loop is seamless.
+// The track holds the list four times and slides by half its width, so the loop is seamless.
 const track = [...words, ...words, ...words, ...words];
 ---
 <div class="ticker" aria-hidden="true">

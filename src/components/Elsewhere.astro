@@ -15,7 +15,6 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
         <p class="bl-eyebrow">{t('elsewhere.kicker')}</p>
         <h2 id="elsewhere-title" class="bl-subtitle">{t('elsewhere.title')}</h2>
       </div>
-      <p class="section__lead">{t('elsewhere.lead')}</p>
     </div>
 
     <ul class="rows" role="list">
@@ -25,7 +24,6 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
             <a class="row" href={s.url} rel="me noopener">
               <span class="row__idx">{idx(i)}</span>
               <span class="row__name">{s.name[lang]}</span>
-              <span class="row__desc">{s.description[lang]}</span>
               <span class="row__handle">{s.handle}</span>
               <span class="row__go bl-label">{t('elsewhere.visit')}</span>
             </a>
@@ -33,7 +31,6 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
             <div class="row row--soon">
               <span class="row__idx">{idx(i)}</span>
               <span class="row__name">{s.name[lang]}</span>
-              <span class="row__desc">{s.description[lang]}</span>
               <span class="row__handle" aria-hidden="true">{s.handle}</span>
               <span class="row__go"><Badge tone="outline">{t('status.soon')}</Badge></span>
             </div>

@@ -50,7 +50,7 @@ a.bl-btn, a.bl-tab { text-decoration: none; }
 
 /* ---------- Ticker ---------- */
 .ticker { height: 64px; overflow: hidden; display: flex; align-items: center; border-block: var(--bw-1) solid var(--bl-line); }
-.ticker__track { display: flex; width: max-content; animation: ticker 40s linear infinite; }
+.ticker__track { display: flex; width: max-content; animation: ticker 100s linear infinite; }
 .ticker__item { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; font-family: var(--font-techno-vibe-font); font-size: 22px; white-space: nowrap; color: var(--fg); }
 .ticker__item::after { content: "✦"; color: var(--og); font-family: var(--font-geist-mono); font-size: 16px; }
 @keyframes ticker { to { transform: translateX(-50%); } }
@@ -77,22 +77,20 @@ a.bl-btn, a.bl-tab { text-decoration: none; }
 
 /* ---------- Elsewhere ---------- */
 .rows { list-style: none; margin: 0; padding: 0; border-top: var(--bw-1) solid var(--bl-line); }
-.row { display: grid; grid-template-columns: 96px 320px minmax(0, 1fr) 260px 140px; align-items: center; gap: var(--space-4); min-height: 112px; padding: var(--space-4) var(--space-5); box-sizing: border-box; border-bottom: var(--bw-1) solid var(--bl-line); text-decoration: none; color: var(--fg) !important; transition: background-color 180ms steps(4), color 180ms steps(4); }
+.row { display: grid; grid-template-columns: 96px 320px minmax(0, 1fr) 140px; align-items: center; gap: var(--space-4); min-height: 112px; padding: var(--space-4) var(--space-5); box-sizing: border-box; border-bottom: var(--bw-1) solid var(--bl-line); text-decoration: none; color: var(--fg) !important; transition: background-color 180ms steps(4), color 180ms steps(4); }
 .row__idx, .row__handle { font-family: var(--font-geist-mono); color: var(--bl-muted); }
 .row__idx { font-size: 14px; }
 .row__handle { font-size: 13px; overflow-wrap: anywhere; }
 .row__name { font-family: var(--font-techno-vibe-font); font-size: 28px; line-height: 1.3; color: var(--fgplus); }
-.row__desc { font-size: 16px; line-height: 1.5; }
 .row__go { justify-self: end; color: var(--og); }
 a.row:hover, a.row:focus-visible { background: var(--og); color: var(--bg) !important; }
 a.row:hover :is(.row__idx, .row__handle, .row__name, .row__go), a.row:focus-visible :is(.row__idx, .row__handle, .row__name, .row__go) { color: var(--bg); }
 .row--soon { color: var(--bl-muted) !important; }
 .row--soon .row__name { color: var(--bl-muted); }
 @media (max-width: 1100px) {
-  .row { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "idx name go" "idx desc go" "idx handle go"; row-gap: var(--space-1); }
+  .row { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "idx name go" "idx handle go"; row-gap: var(--space-1); }
   .row__idx { grid-area: idx; align-self: start; padding-top: 8px; }
   .row__name { grid-area: name; }
-  .row__desc { grid-area: desc; }
   .row__handle { grid-area: handle; }
   .row__go { grid-area: go; }
 }
