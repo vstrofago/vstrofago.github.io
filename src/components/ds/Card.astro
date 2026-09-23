@@ -1,0 +1,33 @@
+---
+// brutalistoic Card: flat frame over an animated Bayer-dither ground (BayerField).
+// titleFont: tech (default) · slab for notes/TL;DR/READMEs · gothic only when the card is the page's hero.
+interface Props {
+  kicker?: string;
+  title?: string;
+  titleFont?: 'tech' | 'slab' | 'gothic';
+  /** When set, the title becomes a link that covers the whole card. */
+  href?: string;
+  external?: boolean;
+  dither?: 'animated' | 'static' | 'none';
+}
+const { kicker, title, titleFont = 'tech', href, external = false, dither = 'animated' } = Astro.props;
+---
+<section class="bl-card">
+  {dither !== 'none' && (
+    <canvas
+      class="bl-bayer"
+      aria-hidden="true"
+      data-animated={dither === 'animated' ? 'true' : 'false'}
+      style="color: var(--bl-line); opacity: 0.5; -webkit-mask-image: linear-gradient(135deg,#000 0%,transparent 58%); mask-image: linear-gradient(135deg,#000 0%,transparent 58%);"
+    ></canvas>
+  )}
+  <div class="bl-card__body">
+    {kicker && <p class="bl-label bl-card__kicker">{kicker}</p>}
+    {title && (
+      <h3 class={`bl-card__title bl-card__title--${titleFont}`}>
+        {href ? <a class="card__link" href={href} {...(external ? { rel: 'noopener', target: '_blank' } : {})}>{title}</a> : title}
+      </h3>
+    )}
+    <slot />
+  </div>
+</section>

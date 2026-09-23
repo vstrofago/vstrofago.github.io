@@ -1,0 +1,37 @@
+---
+import StarMark from './StarMark.astro';
+import { languages, useTranslations, homeFor, type Lang } from '../i18n/ui';
+import { blogUrl } from '../data/spaces';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const home = homeFor(lang);
+---
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href={home} aria-label={t('a11y.home')}>
+      <StarMark />
+      <span class="brand__name">vstrofago</span>
+    </a>
+    <nav class="site-nav bl-label" aria-label={t('a11y.mainNav')}>
+      <a href={`${home}#projects`}>{t('nav.projects')}</a>
+      <a href={`${home}#elsewhere`}>{t('nav.elsewhere')}</a>
+      <a href={blogUrl}>Blog ↗</a>
+    </nav>
+    <nav class="lang" aria-label={t('a11y.langNav')}>
+      <div class="bl-tabs">
+        {(Object.keys(languages) as Lang[]).map((code) => (
+          <a
+            class="bl-tab"
+            href={homeFor(code)}
+            hreflang={code}
+            lang={code}
+            data-ascii-fill
+            aria-current={code === lang ? 'page' : undefined}
+          ><span class="bl-btn__label">{languages[code]}</span></a>
+        ))}
+      </div>
+    </nav>
+  </div>
+</header>

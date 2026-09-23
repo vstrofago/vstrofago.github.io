@@ -1,0 +1,9 @@
+---
+// brutalistoic Badge. Filled tones carry a glyph so meaning never rests on colour alone.
+type Tone = 'default' | 'accent' | 'ok' | 'warn' | 'err' | 'info' | 'outline';
+interface Props { tone?: Tone }
+const { tone = 'default' } = Astro.props;
+const GLYPH: Partial<Record<Tone, string>> = { ok: '✓', err: '!', warn: '~', info: 'i', accent: '✦' };
+const glyph = GLYPH[tone];
+---
+<span class:list={['bl-badge', tone !== 'default' && `bl-badge--${tone}`]}>{glyph && <span aria-hidden="true">{glyph}</span>}<slot /></span>

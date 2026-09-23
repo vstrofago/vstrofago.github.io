@@ -1,0 +1,18 @@
+---
+import { useTranslations, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="site-footer__mark" aria-hidden="true">vstrofago</div>
+    <div class="site-footer__bar bl-caption">
+      <span>© {year} vstrofago</span>
+      <span class="site-footer__note">{t('footer.note')}</span>
+      <a class="site-footer__top bl-label" href="#top">{t('footer.top')}</a>
+    </div>
+  </div>
+</footer>

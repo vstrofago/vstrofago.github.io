@@ -1,0 +1,54 @@
+---
+// Order matters: fonts → design tokens → the design system's component CSS → page layout.
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/brutalistoic.css';
+import '../styles/site.css';
+import jacquardUrl from '../assets/fonts/Jacquard24-Regular.woff?url';
+import groteskUrl from '../assets/fonts/SpaceGrotesk-Variable.woff?url';
+import { languages, useTranslations, homeFor, withBase, defaultLang, type Lang } from '../i18n/ui';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const site = Astro.site ?? new URL('https://vstrofago.github.io');
+const canonical = new URL(homeFor(lang), site).href;
+const ogLocale = { en: 'en_US', es: 'es_MX' } satisfies Record<Lang, string>;
+---
+<!doctype html>
+<html lang={lang} data-theme="terminal">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t('meta.title')}</title>
+    <meta name="description" content={t('meta.description')} />
+    <meta name="theme-color" content="#141414" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="canonical" href={canonical} />
+    {(Object.keys(languages) as Lang[]).map((code) => (
+      <link rel="alternate" hreflang={code} href={new URL(homeFor(code), site).href} />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={new URL(homeFor(defaultLang), site).href} />
+    <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
+    <link rel="preload" href={jacquardUrl} as="font" type="font/woff" crossorigin />
+    <link rel="preload" href={groteskUrl} as="font" type="font/woff" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="vstrofago" />
+    <meta property="og:title" content={t('meta.title')} />
+    <meta property="og:description" content={t('meta.description')} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={ogLocale[lang]} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@vstrofago" />
+  </head>
+  <body>
+    <div id="top" class="bl-root">
+      <a class="skip-link bl-label" href="#main">{t('a11y.skip')}</a>
+      <slot />
+    </div>
+    <script>
+      import { initBrutalistoic } from '../scripts/brutalistoic';
+      initBrutalistoic();
+    </script>
+  </body>
+</html>

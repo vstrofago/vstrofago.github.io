@@ -1,0 +1,40 @@
+---
+import Card from './ds/Card.astro';
+import Badge from './ds/Badge.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder, type ProjectStatus } from '../data/projects';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+// One signal accent per piece: only og (accent) is filled; the rest are outlines.
+const tone: Record<ProjectStatus, 'accent' | 'default' | 'outline'> = { live: 'accent', wip: 'default', soon: 'outline' };
+const label: Record<ProjectStatus, string> = { live: t('status.live'), wip: t('status.wip'), soon: t('status.soon') };
+---
+<section id="projects" class="section" aria-labelledby="projects-title">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__titles">
+        <p class="bl-eyebrow">{t('projects.kicker')}</p>
+        <h2 id="projects-title" class="bl-subtitle">{t('projects.title')}</h2>
+      </div>
+      <p class="section__lead">{t('projects.lead')}</p>
+    </div>
+
+    <div class="cards">
+      {projects.map((p) => {
+        const external = p.url ? /^https?:/.test(p.url) : false;
+        return (
+          <Card kicker={p.category[lang]} title={(p.title ?? placeholder.title)[lang]} href={p.url} external={external}>
+            <p class="card__desc">{(p.description ?? placeholder.description)[lang]}</p>
+            <div class="card__meta">
+              <Badge tone={tone[p.status]}>{label[p.status]}</Badge>
+              <span class="bl-caption">{p.tags ?? placeholder.tags[lang]}</span>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  </div>
+</section>

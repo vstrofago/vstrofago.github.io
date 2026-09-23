@@ -1,0 +1,27 @@
+---
+import AsciiBanner from './ds/AsciiBanner.astro';
+import Button from './ds/Button.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { blogUrl } from '../data/spaces';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__ground" aria-hidden="true">
+    <AsciiBanner rows={54} size={12} fill decorative />
+  </div>
+  <div class="hero__veil" aria-hidden="true"></div>
+
+  <div class="wrap hero__content">
+    <p class="bl-eyebrow">{t('hero.eyebrow')}</p>
+    <h1 id="hero-title" class="bl-gothic hero__title">{t('hero.title')}</h1>
+    <p class="hero__lead">{t('hero.lead')}</p>
+    <div class="hero__actions">
+      <Button href="#projects" variant="primary">{t('hero.ctaProjects')}</Button>
+      <Button href={blogUrl}>{t('hero.ctaBlog')}</Button>
+    </div>
+    <p class="hero__prompt" aria-hidden="true"><b>&gt;</b> {t('hero.prompt')} <span class="bl-cursor"></span></p>
+  </div>
+</section>

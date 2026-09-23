@@ -1,0 +1,19 @@
+---
+// brutalistoic AsciiBanner: the logo in ASCII, eaten by something invisible (animated by
+// src/scripts/brutalistoic.ts). `fill` sizes the rows to the parent's height instead of `rows`.
+interface Props {
+  rows?: number;
+  size?: number;
+  fill?: boolean;
+  alt?: string;
+  decorative?: boolean;
+}
+const { rows = 30, size = 11, fill = false, alt = 'The vstrofago logo in ASCII, being eaten by something invisible', decorative = false } = Astro.props;
+const lh = Math.round(size * 1.25);
+const a11y = decorative ? { 'aria-hidden': 'true' } : { role: 'img', 'aria-label': alt };
+---
+<div class="bl-abanner" data-ascii-banner data-rows={rows} data-size={size} data-fill={fill ? '' : undefined} style={`height: ${rows * lh}px;`} {...a11y}>
+  <pre class="bl-afield bl-abanner__bg" aria-hidden="true"></pre>
+  <pre class="bl-afield bl-abanner__fg" aria-hidden="true"></pre>
+  <pre class="bl-afield bl-abanner__hot" aria-hidden="true"></pre>
+</div>

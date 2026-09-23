@@ -1,0 +1,19 @@
+---
+// brutalistoic Button, rendered as a link (every action on this site navigates).
+// Outline at rest; the ASCII fill comes from src/scripts/brutalistoic.ts via [data-ascii-fill].
+// One `primary` per view.
+interface Props {
+  href: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm';
+  external?: boolean;
+}
+const { href, variant = 'secondary', size, external = false } = Astro.props;
+const cls = [
+  'bl-btn',
+  variant === 'primary' && 'bl-btn--primary',
+  variant === 'ghost' && 'bl-btn--ghost',
+  size === 'sm' && 'bl-btn--sm',
+].filter(Boolean).join(' ');
+---
+<a class={cls} href={href} data-ascii-fill {...(external ? { rel: 'noopener', target: '_blank' } : {})}><span class="bl-btn__label"><slot /></span></a>
