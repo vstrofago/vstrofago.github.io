@@ -31,7 +31,8 @@ export const spaces: Space[] = [
   },
   {
     name: { en: 'Music for working', es: 'Música para trabajar' },
-    handle: '—',
+    handle: 'youtube.com/@robotvoices.mp3',
+    url: 'https://www.youtube.com/@robotvoices.mp3',
   },
 ];
 

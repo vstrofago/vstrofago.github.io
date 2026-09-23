@@ -83,15 +83,15 @@ export const projects: Project[] = [
   },
   {
     id: 'hugo-theme-plano',
-    category: { en: 'blog theme', es: 'tema del blog' },
+    category: { en: 'hugo theme', es: 'tema de hugo' },
     title: { en: 'Plano', es: 'Plano' },
     description: {
-      en: 'The Hugo theme behind the blog: warm paper, a cobalt grid, one accent.',
-      es: 'El tema de Hugo detrás del blog: papel cálido, retícula cobalto, un solo acento.',
+      en: 'A blueprint-flavored Hugo theme: warm paper, a cobalt grid, one accent.',
+      es: 'Un tema de Hugo con aire de plano técnico: papel cálido, retícula cobalto, un solo acento.',
     },
     tags: 'hugo / css',
     status: 'live',
-    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/blog/' }, { kind: 'github', href: 'https://github.com/vstrofago/hugo-theme-plano' }],
+    links: [{ kind: 'github', href: 'https://github.com/vstrofago/hugo-theme-plano' }],
   },
   {
     id: 'music-for-work',
@@ -100,6 +100,6 @@ export const projects: Project[] = [
     description: { en: 'Soundtracks for deep work.', es: 'Música para concentrarse.' },
     tags: '—',
     status: 'soon',
-    links: [],
+    links: [{ kind: 'more', href: 'https://www.youtube.com/@robotvoices.mp3' }],
   },
 ];
