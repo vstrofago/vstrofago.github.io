@@ -2,10 +2,16 @@ import type { Localized } from '../i18n/ui';
 
 // The "Selected experiments" grid. Edit this list to add real projects.
 // - `title` / `description`: leave undefined to show the bracketed placeholder.
-// - `url`: when set, the whole card becomes a link.
+// - `links`: shown as small buttons under the card. Every project gets at least one:
+//   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).
 // - `status`: live (og accent badge) · wip (muted outline) · soon (dashed outline).
 
 export type ProjectStatus = 'live' | 'wip' | 'soon';
+
+export interface ProjectLink {
+  kind: 'demo' | 'github' | 'more';
+  href: string;
+}
 
 export interface Project {
   id: string;
@@ -14,7 +20,7 @@ export interface Project {
   description?: Localized;
   tags?: string;
   status: ProjectStatus;
-  url?: string;
+  links: ProjectLink[];
 }
 
 export const placeholder = {
@@ -37,7 +43,7 @@ export const projects: Project[] = [
     },
     tags: 'astro / typescript',
     status: 'live',
-    url: 'https://vstrofago.github.io/jev-chat-moderator/',
+    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/jev-chat-moderator/' }, { kind: 'github', href: 'https://github.com/vstrofago/jev-chat-moderator' }],
   },
   {
     id: 'zettelkasten-organizer',
@@ -49,7 +55,7 @@ export const projects: Project[] = [
     },
     tags: 'obsidian / claude code',
     status: 'live',
-    url: 'https://github.com/vstrofago/zettelkasten-organizer-skill',
+    links: [{ kind: 'github', href: 'https://github.com/vstrofago/zettelkasten-organizer-skill' }],
   },
   {
     id: 'pnpm-hardening',
@@ -61,7 +67,7 @@ export const projects: Project[] = [
     },
     tags: 'pnpm / security',
     status: 'live',
-    url: 'https://github.com/vstrofago/pnpm-supply-chain-hardening-skill',
+    links: [{ kind: 'github', href: 'https://github.com/vstrofago/pnpm-supply-chain-hardening-skill' }],
   },
   {
     id: 'omarchy-brutalistoic',
@@ -73,7 +79,7 @@ export const projects: Project[] = [
     },
     tags: 'hyprland / omarchy',
     status: 'live',
-    url: 'https://github.com/vstrofago/omarchy-brutalistoic-theme',
+    links: [{ kind: 'github', href: 'https://github.com/vstrofago/omarchy-brutalistoic-theme' }],
   },
   {
     id: 'hugo-theme-plano',
@@ -85,7 +91,7 @@ export const projects: Project[] = [
     },
     tags: 'hugo / css',
     status: 'live',
-    url: 'https://github.com/vstrofago/hugo-theme-plano',
+    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/blog/' }, { kind: 'github', href: 'https://github.com/vstrofago/hugo-theme-plano' }],
   },
   {
     id: 'music-for-work',
@@ -94,5 +100,6 @@ export const projects: Project[] = [
     description: { en: 'Soundtracks for deep work.', es: 'Música para concentrarse.' },
     tags: '—',
     status: 'soon',
+    links: [],
   },
 ];

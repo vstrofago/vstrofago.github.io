@@ -41,7 +41,7 @@ To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.git
 | Project cards | `src/data/projects.ts` |
 | Links in "Find me elsewhere" | `src/data/spaces.ts` |
 
-Project cards show bracketed placeholders until you give them a `title` and `description`. Give a card a `url` and the whole card becomes a link.
+Project cards show bracketed placeholders until you give them a `title` and `description`. Each card lists its `links` as small buttons: `github`, `demo`, or `more` for anywhere else with details.
 
 ## Structure
 

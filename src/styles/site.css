@@ -70,6 +70,7 @@ a.bl-btn, a.bl-tab { text-decoration: none; }
 .cards .bl-card__body { display: flex; flex-direction: column; flex-grow: 1; }
 .card__desc { margin: 0; }
 .card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: auto; padding-top: var(--space-4); }
+.card__links { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-top: var(--space-4); }
 .card__link { color: inherit !important; text-decoration: none; }
 .card__link::after { content: ""; position: absolute; inset: 0; z-index: 2; }
 .card__link:focus-visible { outline: none; }
