@@ -1,0 +1,21 @@
+---
+// Stoico <Icon>: a GitHub Octicon tinted with currentColor. The system renders it as a CSS mask
+// from jsDelivr; here the path is inlined so the site needs no request. Functional only, never
+// decoration. With `label` it is announced; without it, it is hidden from assistive tech.
+import { icons, type IconName } from '../../data/icons';
+
+interface Props { name: IconName; size?: number; label?: string; class?: string }
+const { name, size = 16, label, class: cls } = Astro.props;
+---
+<svg
+  class:list={['st-icon-svg', cls]}
+  viewBox="0 0 16 16"
+  width={size}
+  height={size}
+  fill="currentColor"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  focusable="false"
+  set:html={icons[name]}
+/>

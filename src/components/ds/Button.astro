@@ -1,19 +1,28 @@
 ---
-// brutalistoic Button, rendered as a link (every action on this site navigates).
-// Outline at rest; the ASCII fill comes from src/scripts/brutalistoic.ts via [data-ascii-fill].
-// One `primary` per view.
+// Stoico <Button>, class for class (.st-btn). primary: the one main action on a surface;
+// secondary / ghost for the rest; accent (Ember) only for the Aura hero; link for inline actions.
+// Sizes s (28) · m (36) · l (44). Renders <a> when given `href`.
+import Icon from './Icon.astro';
+import type { IconName } from '../../data/icons';
+
 interface Props {
-  href: string;
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'accent' | 'link';
+  size?: 's' | 'm' | 'l';
+  href?: string;
+  icon?: IconName;
+  iconRight?: IconName;
   external?: boolean;
+  class?: string;
+  [attr: string]: unknown;
 }
-const { href, variant = 'secondary', size, external = false } = Astro.props;
-const cls = [
-  'bl-btn',
-  variant === 'primary' && 'bl-btn--primary',
-  variant === 'ghost' && 'bl-btn--ghost',
-  size === 'sm' && 'bl-btn--sm',
-].filter(Boolean).join(' ');
+const { variant = 'primary', size = 'm', href, icon, iconRight, external, class: cls, ...rest } = Astro.props;
+const iconSize = size === 's' ? 14 : 16;
+const classes = ['st-btn', `st-btn--${variant}`, size !== 'm' && `st-btn--${size}`, cls];
+const Tag = href ? 'a' : 'button';
+const linkAttrs = href ? { href, ...(external ? { rel: 'noopener' } : {}) } : { type: 'button' };
 ---
-<a class={cls} href={href} data-ascii-fill {...(external ? { rel: 'noopener', target: '_blank' } : {})}><span class="bl-btn__label"><slot /></span></a>
+<Tag class:list={classes} {...linkAttrs} {...rest}>
+  {icon && <Icon name={icon} size={iconSize} />}
+  <slot />
+  {iconRight && <Icon name={iconRight} size={iconSize} />}
+</Tag>

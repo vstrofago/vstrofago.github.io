@@ -1,0 +1,12 @@
+---
+// Stoico <Wordmark>: "vstrofago" in Geist Pixel, led by the pixel star. Always lowercase,
+// never in another face. The accessible name is the word itself.
+import Mark from './Mark.astro';
+
+interface Props { size?: number; mark?: boolean; motion?: 'spin' | 'build'; class?: string }
+const { size = 18, mark = true, motion, class: cls } = Astro.props;
+---
+<span class:list={['st-wordmark', cls]} style={`--wordmark-size:${size}px`}>
+  {mark && <Mark size={Math.round(size * 0.9)} motion={motion} />}
+  <span>vstrofago</span>
+</span>

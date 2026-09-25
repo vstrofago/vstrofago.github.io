@@ -1,6 +1,6 @@
 import type { Localized } from '../i18n/ui';
 
-// The "Find me elsewhere" list. A space without `url` renders as "soon" (no link).
+// The "Find me elsewhere" list, as hairline rows. A space without `url` renders without a link.
 
 export interface Space {
   name: Localized;

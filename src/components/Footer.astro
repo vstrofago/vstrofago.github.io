@@ -1,18 +1,41 @@
 ---
-import { useTranslations, type Lang } from '../i18n/ui';
+import Wordmark from './ds/Wordmark.astro';
+import Label from './ds/Label.astro';
+import Icon from './ds/Icon.astro';
+import { languages, useTranslations, homeFor, type Lang } from '../i18n/ui';
+import { spaces, blogUrl } from '../data/spaces';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
-const year = new Date().getFullYear();
+const home = homeFor(lang);
+const langName: Record<Lang, string> = { en: 'English', es: 'Español' };
 ---
-<footer class="site-footer">
-  <div class="wrap">
-    <div class="site-footer__mark" aria-hidden="true">vstrofago</div>
-    <div class="site-footer__bar bl-caption">
-      <span>© {year} vstrofago</span>
-      <span class="site-footer__note">{t('footer.note')}</span>
-      <a class="site-footer__top bl-label" href="#top">{t('footer.top')}</a>
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <Wordmark size={18} />
+      <p class="text text--small text--subtle">{t('footer.note')}</p>
     </div>
+    <div class="footer__col">
+      <Label as="h2">{t('footer.site')}</Label>
+      <a href={`${home}#work`}>{t('nav.work')}</a>
+      <a href={blogUrl}>{t('nav.notes')}</a>
+      <a href={`${home}#elsewhere`}>{t('nav.elsewhere')}</a>
+    </div>
+    <div class="footer__col">
+      <Label as="h2">{t('nav.elsewhere')}</Label>
+      {spaces.filter((s) => s.url && s.url !== blogUrl).map((s) => <a href={s.url} rel="noopener">{s.name[lang]}</a>)}
+    </div>
+    <div class="footer__col">
+      <Label as="h2">{t('footer.language')}</Label>
+      {(Object.keys(languages) as Lang[]).map((code) => (
+        <a href={homeFor(code)} hreflang={code} lang={code} aria-current={code === lang ? 'page' : undefined}>{langName[code]}</a>
+      ))}
+    </div>
+  </div>
+  <div class="container footer__base">
+    <Label>© 2026 vstrofago</Label>
+    <a class="footer__top" href="#top">{t('footer.top')}<Icon name="arrow-up" size={14} /></a>
   </div>
 </footer>

@@ -1,0 +1,53 @@
+---
+// 01 Work. Sticky label on the left (4 cols), a numbered list on the right (8 cols).
+// Rows are separated by hairlines, not boxed: space before borders.
+import Label from './ds/Label.astro';
+import Badge from './ds/Badge.astro';
+import Icon from './ds/Icon.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder, type ProjectStatus } from '../data/projects';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const linkLabel = { demo: t('work.demo'), github: t('work.github'), more: t('work.more') };
+const status: Record<ProjectStatus, { label: string; dot?: boolean; outline?: boolean }> = {
+  live: { label: t('status.live'), dot: true },
+  wip: { label: t('status.wip') },
+  soon: { label: t('status.soon'), outline: true },
+};
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+<section id="work" class="section" aria-labelledby="work-title">
+  <div class="container split">
+    <div class="split__aside">
+      <div class="split__sticky">
+        <Label index="01">{t('work.label')}</Label>
+        <h2 id="work-title" class="heading heading--2">{t('work.title')}</h2>
+        <p class="text text--muted">{t('work.lead')}</p>
+      </div>
+    </div>
+    <ol class="rows">
+      {projects.map((p, i) => (
+        <li class="work">
+          <span class="work__index">{pad(i + 1)}</span>
+          <div class="work__body">
+            <h3 class="heading heading--3">{(p.title ?? placeholder.title)[lang]}</h3>
+            <p class="text text--muted">{(p.description ?? placeholder.description)[lang]}</p>
+            <ul class="work__links">
+              {p.links.map((l) => (
+                <li><a class="st-btn st-btn--link" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={14} /></a></li>
+              ))}
+            </ul>
+          </div>
+          <div class="work__meta">
+            <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
+            <span>{p.category[lang]}</span>
+            <span>{p.tags ?? placeholder.tags[lang]}</span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

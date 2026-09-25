@@ -1,0 +1,15 @@
+/* Stoico — minimal base. Opt in with class="stoico" on <body> or a root. */
+.stoico{background:var(--bg);color:var(--fg);font:var(--type-body);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:"ss01","cv11"}
+.stoico *,.stoico *::before,.stoico *::after{box-sizing:border-box}
+.stoico ::selection{background:var(--selection)}
+.stoico a{color:inherit;text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px;text-decoration-thickness:1px;transition:text-decoration-color var(--dur-fast) var(--ease-standard)}
+.stoico a:hover{text-decoration-color:currentColor}
+.stoico :focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-2)}
+.stoico h1,.stoico h2,.stoico h3,.stoico h4,.stoico p{margin:0;text-wrap:pretty}
+.st-grain{position:relative;isolation:isolate}
+.st-grain::after{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:var(--grain-opacity);mix-blend-mode:screen;pointer-events:none;z-index:1}
+[data-theme="light"] .st-grain::after,.st-grain[data-theme="light"]::after{mix-blend-mode:multiply}
+@keyframes st-reveal{from{opacity:0;transform:translateY(var(--reveal-distance))}to{opacity:1;transform:none}}
+@keyframes st-drift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,calc(var(--drift-distance) * -1),0)}}
+@keyframes st-toast-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes st-pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}

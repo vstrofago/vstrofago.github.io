@@ -1,0 +1,26 @@
+---
+// Stoico <Mark>: the vstrofago 9×9 pixel star. Same paths and classes as the React component,
+// so motion="spin" / "build" animate through motion.css. Size in multiples of 9 when possible.
+interface Props { size?: number; motion?: 'spin' | 'build'; label?: string; class?: string }
+const { size = 18, motion, label, class: cls } = Astro.props;
+const SHAPES: [string, string][] = [
+  ['mark__core', 'M3 3h3v3H3z'],
+  ['mark__a1', 'M4 2h1v1H4zM6 4h1v1H6zM4 6h1v1H4zM2 4h1v1H2z'],
+  ['mark__a2', 'M4 1h1v1H4zM7 4h1v1H7zM4 7h1v1H4zM1 4h1v1H1z'],
+  ['mark__a3', 'M4 0h1v1H4zM8 4h1v1H8zM4 8h1v1H4zM0 4h1v1H0z'],
+  ['mark__diagonal mark__diagonal--tl', 'M2 2h1v1H2z'],
+  ['mark__diagonal mark__diagonal--tr', 'M6 2h1v1H6z'],
+  ['mark__diagonal mark__diagonal--br', 'M6 6h1v1H6z'],
+  ['mark__diagonal mark__diagonal--bl', 'M2 6h1v1H2z'],
+];
+---
+<span
+  class:list={['animation-mark', motion && `animation-mark--${motion}`, cls]}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <svg class="mark__svg" viewBox="0 0 9 9" width={size} height={size} aria-hidden="true" focusable="false" shape-rendering="crispEdges">
+    {SHAPES.map(([c, d]) => <path class={c} d={d} />)}
+  </svg>
+</span>

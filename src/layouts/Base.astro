@@ -1,11 +1,21 @@
 ---
-// Order matters: fonts → design tokens → the design system's component CSS → page layout.
+// Order matters: fonts → Stoico tokens → the system's component CSS → page layout.
+// src/styles/stoico/ mirrors the design system's tokens/ and components/ verbatim (minus
+// tokens/fonts.css, replaced by the self-hosted fonts.css). Never edit them here.
 import '../styles/fonts.css';
-import '../styles/tokens.css';
-import '../styles/brutalistoic.css';
+import '../styles/stoico/tokens/colors.css';
+import '../styles/stoico/tokens/typography.css';
+import '../styles/stoico/tokens/spacing.css';
+import '../styles/stoico/tokens/radius.css';
+import '../styles/stoico/tokens/elevation.css';
+import '../styles/stoico/tokens/motion.css';
+import '../styles/stoico/tokens/voices.css';
+import '../styles/stoico/tokens/base.css';
+import '../styles/stoico/components/components.css';
+import '../styles/stoico/components/motion/motion.css';
 import '../styles/site.css';
-import jacquardUrl from '../assets/fonts/Jacquard24-Regular.woff?url';
-import groteskUrl from '../assets/fonts/SpaceGrotesk-Variable.woff?url';
+import pixelUrl from '../assets/fonts/GeistPixel-Square.woff2?url';
+import sansUrl from '../assets/fonts/Geist-Variable.woff2?url';
 import { languages, useTranslations, homeFor, withBase, defaultLang, type Lang } from '../i18n/ui';
 
 interface Props { lang: Lang }
@@ -16,22 +26,36 @@ const canonical = new URL(homeFor(lang), site).href;
 const ogLocale = { en: 'en_US', es: 'es_MX' } satisfies Record<Lang, string>;
 ---
 <!doctype html>
-<html lang={lang} data-theme="terminal">
+<html lang={lang} data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{t('meta.title')}</title>
     <meta name="description" content={t('meta.description')} />
-    <meta name="theme-color" content="#141414" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0B0B0A" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- Theme before first paint. Dark is the default; a visitor's choice is shared with the
+         blog (same origin, same key). Storage can be missing or throw: then it stays dark. -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        try {
+          if (localStorage.getItem('stoico-theme') === 'light') {
+            d.dataset.theme = 'light';
+            document.querySelector('meta[name="theme-color"]').content = '#FAFAF8';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="canonical" href={canonical} />
     {(Object.keys(languages) as Lang[]).map((code) => (
       <link rel="alternate" hreflang={code} href={new URL(homeFor(code), site).href} />
     ))}
     <link rel="alternate" hreflang="x-default" href={new URL(homeFor(defaultLang), site).href} />
     <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
-    <link rel="preload" href={jacquardUrl} as="font" type="font/woff" crossorigin />
-    <link rel="preload" href={groteskUrl} as="font" type="font/woff" crossorigin />
+    <link rel="preload" href={pixelUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sansUrl} as="font" type="font/woff2" crossorigin />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="vstrofago" />
     <meta property="og:title" content={t('meta.title')} />
@@ -41,14 +65,14 @@ const ogLocale = { en: 'en_US', es: 'es_MX' } satisfies Record<Lang, string>;
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@vstrofago" />
   </head>
-  <body>
-    <div id="top" class="bl-root">
-      <a class="skip-link bl-label" href="#main">{t('a11y.skip')}</a>
+  <body class="stoico" data-voice="aura">
+    <div id="top">
+      <a class="skip-link" href="#main">{t('a11y.skip')}</a>
       <slot />
     </div>
     <script>
-      import { initBrutalistoic } from '../scripts/brutalistoic';
-      initBrutalistoic();
+      import { initStoico } from '../scripts/stoico';
+      initStoico();
     </script>
   </body>
 </html>

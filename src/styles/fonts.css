@@ -1,38 +1,26 @@
-/* brutalistoic typefaces, self-hosted.
-   Subset to Latin + Latin-1 + the glyphs the system uses (arrows, ✦ ✓, block elements ░▒▓█).
-   If you add copy in another script, re-subset from the full files in the design system. */
+/* Stoico typefaces, self-hosted (the system loads them from jsDelivr; the same files live here).
+   Subset to Latin + Latin-1 + general punctuation, arrows and ⌘ ✓ ●.
+   Geist and Geist Mono are variable (weights 100–900); Geist Pixel is the Square variant.
+   If new copy needs other characters, re-subset from the `geist` and `@fontsource/geist-pixel`
+   npm packages with fontTools `pyftsubset`. */
 
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('../assets/fonts/SpaceGrotesk-Variable.woff') format('woff');
-  font-weight: 300 700;
+  font-family: 'Geist';
+  src: url('../assets/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Geist Mono';
-  src: url('../assets/fonts/GeistMono-Regular.woff') format('woff');
-  font-weight: 400;
+  src: url('../assets/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Geist Mono';
-  src: url('../assets/fonts/GeistMono-Medium.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Jacquard24';
-  src: url('../assets/fonts/Jacquard24-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Techno Vibe Font';
-  src: url('../assets/fonts/TechnoVibe-Regular.woff') format('woff');
+  font-family: 'Geist Pixel';
+  src: url('../assets/fonts/GeistPixel-Square.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

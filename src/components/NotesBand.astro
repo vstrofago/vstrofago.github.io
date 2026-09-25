@@ -1,0 +1,29 @@
+---
+// The closing band: always ink (data-theme="dark", even in the light theme), the page's one
+// AsciiBanner (the star, eaten and reformed), then the way into the blog.
+import Label from './ds/Label.astro';
+import Button from './ds/Button.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { blogUrl } from '../data/spaces';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+<section class="band" data-theme="dark" aria-labelledby="notes-title">
+  <div class="ascii-banner" data-ascii-banner data-rows="22" data-size="11" aria-hidden="true">
+    <pre class="ascii-banner__layer ascii-banner__background"></pre>
+    <pre class="ascii-banner__layer ascii-banner__foreground"></pre>
+    <pre class="ascii-banner__layer ascii-banner__accent"></pre>
+  </div>
+  <div class="container band__inner">
+    <div class="band__title">
+      <Label index="04">{t('notes.label')}</Label>
+      <h2 id="notes-title" class="display display--m">{t('notes.title')}</h2>
+    </div>
+    <div class="band__side">
+      <p class="text text--muted">{t('notes.body')}</p>
+      <Button variant="primary" size="l" href={blogUrl} iconRight="arrow-right">{t('notes.cta')}</Button>
+    </div>
+  </div>
+</section>

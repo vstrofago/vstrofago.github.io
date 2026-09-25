@@ -1,0 +1,16 @@
+/* Stoico — the four voices. Same foundation, different expression.
+   Apply with data-voice on any container. Spectrum: editorial → geist → aura → studio (calm → delight). Geist (product) = Vercel Geist, used directly. */
+[data-voice="editorial"]{
+  --bg:#121110;--surface:#171615;--fg:#E9E6DF;--fg-muted:#A19D94;--border:rgba(233,230,223,.1);
+  --voice-heading:var(--font-sans);--voice-body:var(--font-serif);--voice-radius:0;--voice-density:1.25;/* @kind other */
+}
+[data-theme="light"] [data-voice="editorial"],[data-theme="light"][data-voice="editorial"]{
+  --bg:var(--paper-2);--surface:var(--paper-1);--fg:#1B1A18;--fg-muted:#5E5C57;--border:rgba(27,26,24,.1);
+}
+[data-voice="aura"]{
+  --voice-heading:var(--font-pixel);--voice-body:var(--font-sans);--voice-radius:var(--radius-4);--voice-density:1.5;/* @kind other */
+}
+[data-voice="studio"]{
+  --bg:var(--ink);--fg:#EDEDEA;--fg-muted:var(--gray-500);--border:rgba(237,237,234,.12);
+  --voice-heading:var(--font-pixel);--voice-body:var(--font-mono);--voice-radius:0;--voice-density:1;/* @kind other */
+}

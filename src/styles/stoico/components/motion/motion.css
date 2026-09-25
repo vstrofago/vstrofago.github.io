@@ -1,0 +1,111 @@
+/* Motion & ASCII primitives — from the vstrofago animation-components package. */
+.animation-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--animation-foreground, #f1f1f1);
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.mark__svg {
+  display: block;
+  flex: none;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+
+.animation-mark--labelled {
+  line-height: 1.4;
+  font: inherit;
+}
+
+.mark__label { color: inherit; }
+
+.animation-mark--spin .mark__diagonal { animation: mark-chase 0.6s step-end infinite; }
+.animation-mark--spin .mark__diagonal--tr { animation-delay: -0.45s; }
+.animation-mark--spin .mark__diagonal--br { animation-delay: -0.3s; }
+.animation-mark--spin .mark__diagonal--bl { animation-delay: -0.15s; }
+
+.animation-mark--build .mark__a1 { animation: mark-build-1 1.6s step-end infinite; }
+.animation-mark--build .mark__a2 { animation: mark-build-2 1.6s step-end infinite; }
+.animation-mark--build .mark__a3 { animation: mark-build-3 1.6s step-end infinite; }
+.animation-mark--build .mark__diagonal { animation: mark-build-4 1.6s step-end infinite; }
+
+@keyframes mark-chase { 0% { opacity: 1; } 25%, 100% { opacity: 0; } }
+@keyframes mark-build-1 { 0% { opacity: 0; } 12.5%, 100% { opacity: 1; } }
+@keyframes mark-build-2 { 0% { opacity: 0; } 25%, 100% { opacity: 1; } }
+@keyframes mark-build-3 { 0% { opacity: 0; } 37.5%, 100% { opacity: 1; } }
+@keyframes mark-build-4 { 0% { opacity: 0; } 50%, 100% { opacity: 1; } }
+
+.bayer-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.ascii-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  margin: 0;
+  white-space: pre;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-weight: 400;
+  letter-spacing: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ascii-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ascii-banner__layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  margin: 0;
+  white-space: pre;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-weight: 400;
+  letter-spacing: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ascii-banner__background { z-index: 0; color: var(--animation-muted, rgba(255, 255, 255, 0.24)); }
+.ascii-banner__foreground { z-index: 1; color: var(--animation-foreground, #f1f1f1); }
+.ascii-banner__accent { z-index: 2; color: var(--animation-accent, #f47b53); }
+
+.ascii-devoured {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--animation-foreground, #f1f1f1);
+}
+
+.ascii-devoured pre {
+  margin: 0;
+  white-space: pre;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-weight: 400;
+  letter-spacing: 0;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animation-mark--spin .mark__diagonal,
+  .animation-mark--build .mark__a1,
+  .animation-mark--build .mark__a2,
+  .animation-mark--build .mark__a3,
+  .animation-mark--build .mark__diagonal { animation: none; }
+}

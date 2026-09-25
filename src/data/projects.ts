@@ -1,10 +1,11 @@
 import type { Localized } from '../i18n/ui';
 
-// The "Selected experiments" grid. Edit this list to add real projects.
+// The "Selected experiments" list, numbered in this order. Edit it to add real projects.
 // - `title` / `description`: leave undefined to show the bracketed placeholder.
-// - `links`: shown as small buttons under the card. Every project gets at least one:
+// - `links`: quiet text links on the row, each with an arrow. Every project gets at least one:
 //   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).
-// - `status`: live (og accent badge) · wip (muted outline) · soon (dashed outline).
+// - `status`: live (neutral badge with a dot) · wip (neutral badge) · soon (outline badge).
+//   Always a word, never colour alone; Ember stays reserved for the hero.
 
 export type ProjectStatus = 'live' | 'wip' | 'soon';
 

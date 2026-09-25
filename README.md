@@ -1,8 +1,8 @@
 # vstrofago
 
-**Projects, Notes, and other things.** The landing for vstrofago: a portfolio of experiments across code, writing, philosophy on video, productivity systems and music.
+**Projects, notes and other things.** The landing for vstrofago: a portfolio of experiments across code, writing, philosophy on video, productivity systems and music.
 
-Static site built with [Astro](https://astro.build), styled with the **brutalistoic** design system, bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. It ships no framework to the browser: one small script (15 KB, under 5 KB gzipped) runs the ASCII and dither effects.
+Static site built with [Astro](https://astro.build), styled with **Stoico**, the vstrofago design language (Aura voice, dark by default with a light theme), bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. It ships no framework to the browser: one small script (about 9 KB, 4 KB gzipped) runs the theme toggle, reveals, the marble and dither fields and the ASCII banner.
 
 ## Run it
 
@@ -38,22 +38,22 @@ To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.git
 | What | Where |
 | --- | --- |
 | All interface copy, both languages | `src/i18n/ui.ts` |
-| Project cards | `src/data/projects.ts` |
+| Projects (the numbered list) | `src/data/projects.ts` |
 | Links in "Find me elsewhere" | `src/data/spaces.ts` |
 
-Project cards show bracketed placeholders until you give them a `title` and `description`. Each card lists its `links` as small buttons: `github`, `demo`, or `more` for anywhere else with details.
+Projects show bracketed placeholders until you give them a `title` and `description`. Each row lists its `links` as quiet text links: `github` ("Source"), `demo`, or `more` for anywhere else with details.
 
 ## Structure
 
 ```
 src/
   pages/            index.astro (en) · es/index.astro (es)
-  layouts/Base.astro  <head>, SEO, hreflang, fonts, the one client script
-  components/       Header, Hero, Ticker, Projects, Elsewhere, Footer, StarMark
-    ds/             brutalistoic components as Astro markup: Button, Card, Badge, AsciiBanner
-  scripts/          brutalistoic.ts: ASCII fill, Bayer dither, AsciiBanner (ported from the system)
-  styles/           fonts · tokens (system) · brutalistoic (system) · site (layout only)
-  assets/fonts/     self-hosted, subset WOFF
+  layouts/Base.astro  <head>, SEO, hreflang, fonts, theme-before-paint, the one client script
+  components/       Header, Hero, Work, Approach, Elsewhere, NotesBand, Footer
+    ds/             Stoico components as Astro markup: Button, Badge, Label, Icon, Mark, Wordmark, Frame
+  scripts/          stoico.ts: theme, nav, reveal, parallax, MarbleField, BayerField, AsciiBanner
+  styles/           fonts · stoico/ (the system, verbatim) · site (layout + type primitives)
+  assets/fonts/     self-hosted, subset WOFF2 (Geist, Geist Mono, Geist Pixel)
   i18n/ · data/
 ```
 
