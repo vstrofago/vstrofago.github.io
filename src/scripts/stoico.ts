@@ -1,5 +1,5 @@
 // Stoico behaviours for the landing, as plain DOM code (the site ships no framework).
-// MarbleField, BayerField and AsciiBanner are ports of the design system's React components
+// MarbleField and AsciiBanner are ports of the design system's React components
 // (components/motion/*.jsx): algorithms, ramps, matrices and timings are the system's own; only
 // the wiring changed. Every effect pauses offscreen or when the tab is hidden, and freezes to a
 // still frame under prefers-reduced-motion.
@@ -9,7 +9,7 @@
 //   [data-reveal]         fade + 16px rise, once, when it enters the viewport
 //   [data-parallax]       the hero field follows the cursor by ≤14px
 //   canvas[data-marble]   MarbleField: slowly swirling dithered marble
-//   canvas[data-bayer]    BayerField: 8×8 ordered dither (data-still for a static plate)
+//   [data-paginate]       a list shown N rows at a time, with its [data-pager] after it
 //   [data-ascii-banner]   AsciiBanner: the ASCII star, eaten and reformed
 
 const THEME_KEY = 'stoico-theme';
@@ -101,6 +101,39 @@ function initReveal(): void {
     { rootMargin: '0px 0px -15% 0px' },
   );
   els.forEach((el) => io.observe(el));
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Pagination: `ol[data-paginate="3"]` shows three rows at a time; the [data-pager] that follows
+   it is revealed with previous / next and "1 / 2". Without JS every row shows.
+   --------------------------------------------------------------------------------------------- */
+function initPagination(): void {
+  document.querySelectorAll<HTMLElement>('[data-paginate]').forEach((list) => {
+    const size = Math.max(1, Number(list.dataset.paginate) || 3);
+    const rows = Array.from(list.children) as HTMLElement[];
+    const pages = Math.ceil(rows.length / size);
+    const pager = list.parentElement?.querySelector<HTMLElement>('[data-pager]');
+    if (!pager || pages <= 1) return;
+    const prev = pager.querySelector<HTMLButtonElement>('[data-pager-prev]');
+    const next = pager.querySelector<HTMLButtonElement>('[data-pager-next]');
+    const status = pager.querySelector<HTMLElement>('[data-pager-status]');
+    let page = 0;
+    const show = (to: number, from?: HTMLButtonElement | null): void => {
+      page = Math.max(0, Math.min(pages - 1, to));
+      rows.forEach((row, i) => { row.hidden = Math.floor(i / size) !== page; });
+      if (status) status.textContent = `${page + 1} / ${pages}`;
+      if (prev) prev.disabled = page === 0;
+      if (next) next.disabled = page === pages - 1;
+      if (!from) return;
+      // The button just used may now be disabled, which drops focus; hand it to the other one.
+      if (from.disabled) (from === next ? prev : next)?.focus();
+      if (list.getBoundingClientRect().top < 0) list.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+    };
+    prev?.addEventListener('click', () => show(page - 1, prev));
+    next?.addEventListener('click', () => show(page + 1, next));
+    pager.hidden = false;
+    show(0);
+  });
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -210,79 +243,6 @@ function attachMarble(canvas: HTMLCanvasElement): void {
   reducedQuery()?.addEventListener?.('change', start);
   size();
   start();
-}
-
-/* ---------------------------------------------------------------------------------------------
-   BayerField (components/motion/BayerField.jsx). 8×8 matrix, diagonal falloff modulated by a
-   slow wave; 90ms ticks. data-still draws one frame (static plates).
-   --------------------------------------------------------------------------------------------- */
-const BAYER8: number[][] = (() => {
-  let matrix = [[0, 2], [3, 1]];
-  let size = 2;
-  const quadrant = [[0, 2], [3, 1]];
-  while (size < 8) {
-    const expanded: number[][] = Array.from({ length: size * 2 }, () => new Array(size * 2));
-    for (let y = 0; y < size * 2; y += 1) {
-      for (let x = 0; x < size * 2; x += 1) {
-        expanded[y][x] = 4 * matrix[y % size][x % size] + quadrant[Math.floor(y / size)][Math.floor(x / size)];
-      }
-    }
-    matrix = expanded;
-    size *= 2;
-  }
-  return matrix;
-})();
-
-function attachBayer(canvas: HTMLCanvasElement): void {
-  const context = canvas.getContext('2d');
-  if (!context) return;
-  const cell = Number(canvas.dataset.cell ?? 3);
-  const animated = !('still' in canvas.dataset);
-  let image: ImageData | null = null;
-  let time = Number(canvas.dataset.seed ?? 1.3);
-  let timer = 0;
-  let visible = true;
-
-  const draw = (): void => {
-    const width = Math.max(1, Math.ceil(canvas.clientWidth / cell));
-    const height = Math.max(1, Math.ceil(canvas.clientHeight / cell));
-    if (canvas.width !== width || canvas.height !== height || !image) {
-      canvas.width = width;
-      canvas.height = height;
-      image = context.createImageData(width, height);
-    }
-    const channels = getComputedStyle(canvas).color.match(/[\d.]+/g) ?? ['128', '128', '128'];
-    const [red, green, blue] = channels.map(Number);
-    const pixels = image.data;
-    for (let y = 0; y < height; y += 1) {
-      const ny = y / height;
-      for (let x = 0; x < width; x += 1) {
-        const nx = x / width;
-        const base = 1 - (nx * 0.55 + ny * 0.45);
-        const wave = 0.5 + 0.5 * Math.sin(nx * 6 + time * 0.9) * Math.cos(ny * 5 - time * 0.7);
-        const value = base * (0.35 + 0.9 * wave);
-        const offset = (y * width + x) * 4;
-        if (value > (BAYER8[y & 7][x & 7] + 0.5) / 64) {
-          pixels[offset] = red; pixels[offset + 1] = green; pixels[offset + 2] = blue; pixels[offset + 3] = 255;
-        } else {
-          pixels[offset + 3] = 0;
-        }
-      }
-    }
-    context.putImageData(image, 0, 0);
-  };
-
-  draw();
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(canvas);
-  document.addEventListener('stoico:theme', draw);
-  if (!animated || reduced()) return;
-  watchVisibility(canvas, (v) => { visible = v; });
-  timer = window.setInterval(() => {
-    if (!visible || document.hidden) return;
-    time += 0.09;
-    draw();
-  }, 90);
-  void timer;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -521,8 +481,8 @@ export function initStoico(): void {
   initTheme();
   initNav();
   initReveal();
+  initPagination();
   initParallax();
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-marble]').forEach(attachMarble);
-  document.querySelectorAll<HTMLCanvasElement>('canvas[data-bayer]').forEach(attachBayer);
   document.querySelectorAll<HTMLElement>('[data-ascii-banner]').forEach(attachAsciiBanner);
 }

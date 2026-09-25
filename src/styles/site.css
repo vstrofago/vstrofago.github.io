@@ -9,7 +9,7 @@ html[data-theme="light"] { color-scheme: light; }
 body { margin: 0; min-height: 100vh; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-/* A dark island inside the light theme (the Notes band). colors.css only defines dark on :root,
+/* A dark island inside the light theme (the ASCII footer). colors.css only defines dark on :root,
    so the same aliases are restated for [data-theme="dark"]. Keep in sync with colors.css. */
 [data-theme="dark"] {
   --bg: var(--gray-1000); --bg-subtle: var(--gray-950); --bg-inverse: var(--paper-1);
@@ -58,13 +58,11 @@ body { margin: 0; min-height: 100vh; }
 
 /* base.css styles every `.stoico a` (0,1,1), which outranks the single-class component rules
    when they sit on an <a>. Restate what an anchor-rendered component needs. */
-.stoico a:where(.st-btn:not(.st-btn--link), .space, .footer__top, .skip-link, .nav__brand) { text-decoration: none; }
+.stoico a:where(.st-btn:not(.st-btn--link), .space, .skip-link, .nav__brand) { text-decoration: none; }
 .stoico a.st-btn--primary { color: var(--bg); }
 .stoico a.st-btn--accent { color: var(--ink); }
 .stoico a:where(.st-btn--secondary, .st-btn--ghost, .st-btn--link, .space) { color: var(--fg); }
 .stoico a.skip-link { color: var(--bg); }
-.stoico a.footer__top { color: var(--fg-subtle); }
-.stoico a.footer__top:hover { color: var(--fg); }
 
 /* ---------- Reveal: fade + 16px rise, once. Only hidden when JS runs, so no-JS shows all. ---------- */
 .js [data-reveal] { opacity: 0; transform: translateY(var(--reveal-distance)); transition: opacity var(--dur-reveal) var(--ease-out) var(--reveal-delay, 0ms), transform var(--dur-reveal) var(--ease-out) var(--reveal-delay, 0ms); }
@@ -132,6 +130,7 @@ body { margin: 0; min-height: 100vh; }
 /* Hairline rows: tables and lists use row rules only. */
 .rows { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--border); }
 .rows > li { border-top: 1px solid var(--border); }
+.rows > li[hidden] { display: none; }
 
 .work { display: grid; grid-template-columns: 48px minmax(0, 1fr) 160px; gap: var(--space-6); padding-block: 36px; align-items: baseline; }
 .work__index { font: 400 12px/1 var(--font-mono); color: var(--fg-subtle); }
@@ -141,6 +140,11 @@ body { margin: 0; min-height: 100vh; }
 .work__links .st-btn--link { gap: 4px; font-size: 14px; }
 .work__meta { display: grid; gap: var(--space-2); justify-items: end; text-align: right; font: 400 12px/1.6 var(--font-mono); color: var(--fg-subtle); }
 .work__meta .st-badge { margin-bottom: var(--space-1); }
+
+/* Pager under the list: previous · 1 / 2 · next. Revealed by stoico.ts. */
+.pager { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-top: var(--space-6); }
+.pager[hidden] { display: none; }
+.pager__status { font: 400 12px/1 var(--font-mono); color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
 @media (max-width: 720px) {
   .work { grid-template-columns: 32px minmax(0, 1fr); gap: var(--space-4); padding-block: var(--space-6); }
   .work__meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); text-align: left; }
@@ -158,45 +162,8 @@ a.space:hover .space__arrow { color: var(--fg); transform: translate(2px, -2px);
   .space__arrow { grid-row: 1 / 3; grid-column: 2; }
 }
 
-/* Art as material: words in 1–6, plate in 8–11, dropped 64px. */
-.composition { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-5); align-items: end; padding-bottom: 64px; }
-.composition__words { grid-column: 1 / 7; align-self: start; display: grid; gap: var(--space-5); justify-items: start; }
-.composition__words .heading { max-width: 14ch; }
-.composition__plate { grid-column: 8 / 11; transform: translateY(64px); }
-.js .composition__plate[data-reveal]:not(.is-revealed) { transform: translateY(calc(64px + var(--reveal-distance))); }
-.plate { position: absolute; inset: 0; }
-.plate--ink { background: var(--ink); }
-.plate .bayer-field { color: var(--gray-600); -webkit-mask-image: none; mask-image: none; }
-@media (max-width: 860px) {
-  .composition { grid-template-columns: minmax(0, 1fr); gap: var(--space-7); padding-bottom: 0; }
-  .composition__words, .composition__plate { grid-column: 1; }
-  .composition__plate, .js .composition__plate[data-reveal].is-revealed { transform: none; max-width: 320px; }
-  .js .composition__plate[data-reveal]:not(.is-revealed) { transform: translateY(var(--reveal-distance)); }
-}
-
-/* ---------- Notes band (ink, ASCII) ---------- */
-.band { position: relative; }
-.band .ascii-banner { height: calc(22 * 14px); }
-.band .ascii-banner__layer { font-size: 11px; line-height: 14px; }
-.band__inner { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-7); align-items: end; padding-top: var(--space-8); padding-bottom: var(--space-10); }
-.band__title { display: grid; gap: var(--space-5); justify-items: start; }
-.band__side { display: grid; gap: 20px; justify-items: start; }
-.band__side .text { max-width: 40ch; }
-@media (max-width: 860px) { .band__inner { grid-template-columns: minmax(0, 1fr); padding-bottom: var(--space-9); } }
-
-/* ---------- Footer ---------- */
-.footer { border-top: 1px solid var(--border); }
-.footer__grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: var(--space-6); padding-top: var(--space-8); padding-bottom: 40px; }
-.footer__brand { display: grid; gap: var(--space-4); align-content: start; }
-.footer__brand .text { max-width: 30ch; }
-.footer__col { display: grid; gap: 10px; align-content: start; }
-.footer__col .st-label { margin-bottom: var(--space-1); }
-.footer__col a { font: 400 14px/1.4 var(--font-sans); color: var(--fg-muted); text-decoration: none; transition: color var(--dur-fast) var(--ease-standard); }
-.footer__col a:hover, .footer__col a[aria-current="page"] { color: var(--fg); }
-.footer__base { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding-bottom: var(--space-6); }
-.footer__top { display: inline-flex; align-items: center; gap: 6px; font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); text-decoration: none; }
-.footer__top:hover { color: var(--fg); }
-@media (max-width: 720px) {
-  .footer__grid { grid-template-columns: 1fr 1fr; }
-  .footer__brand { grid-column: 1 / -1; }
-}
+/* ---------- Footer: the AsciiBanner, then the wordmark and one line ---------- */
+.footer { position: relative; }
+.footer .ascii-banner { height: calc(22 * 14px); }
+.footer .ascii-banner__layer { font-size: 11px; line-height: 14px; }
+.footer__inner { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-5); padding-bottom: var(--space-8); text-align: center; }

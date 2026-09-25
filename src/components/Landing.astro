@@ -4,9 +4,7 @@ import Base from '../layouts/Base.astro';
 import Header from './Header.astro';
 import Hero from './Hero.astro';
 import Work from './Work.astro';
-import Approach from './Approach.astro';
 import Elsewhere from './Elsewhere.astro';
-import NotesBand from './NotesBand.astro';
 import Footer from './Footer.astro';
 import type { Lang } from '../i18n/ui';
 
@@ -18,9 +16,7 @@ const { lang } = Astro.props;
   <main id="main">
     <Hero lang={lang} />
     <Work lang={lang} />
-    <Approach lang={lang} />
     <Elsewhere lang={lang} />
-    <NotesBand lang={lang} />
   </main>
   <Footer lang={lang} />
 </Base>

@@ -2,7 +2,7 @@
 
 **Projects, notes and other things.** The landing for vstrofago: a portfolio of experiments across code, writing, philosophy on video, productivity systems and music.
 
-Static site built with [Astro](https://astro.build), styled with **Stoico**, the vstrofago design language (Aura voice, dark by default with a light theme), bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. It ships no framework to the browser: one small script (about 9 KB, 4 KB gzipped) runs the theme toggle, reveals, the marble and dither fields and the ASCII banner.
+Static site built with [Astro](https://astro.build), styled with **Stoico**, the vstrofago design language (Aura voice, dark by default with a light theme), bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. It ships no framework to the browser: one small script runs the theme toggle, reveals, the project pager, the marble field and the ASCII banner footer.
 
 ## Run it
 
@@ -38,7 +38,7 @@ To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.git
 | What | Where |
 | --- | --- |
 | All interface copy, both languages | `src/i18n/ui.ts` |
-| Projects (the numbered list) | `src/data/projects.ts` |
+| Projects (the numbered list, three per page) | `src/data/projects.ts` |
 | Links in "Find me elsewhere" | `src/data/spaces.ts` |
 
 Projects show bracketed placeholders until you give them a `title` and `description`. Each row lists its `links` as quiet text links: `github` ("Source"), `demo`, or `more` for anywhere else with details.
@@ -49,9 +49,9 @@ Projects show bracketed placeholders until you give them a `title` and `descript
 src/
   pages/            index.astro (en) · es/index.astro (es)
   layouts/Base.astro  <head>, SEO, hreflang, fonts, theme-before-paint, the one client script
-  components/       Header, Hero, Work, Approach, Elsewhere, NotesBand, Footer
-    ds/             Stoico components as Astro markup: Button, Badge, Label, Icon, Mark, Wordmark, Frame
-  scripts/          stoico.ts: theme, nav, reveal, parallax, MarbleField, BayerField, AsciiBanner
+  components/       Header, Hero, Work, Elsewhere, Footer
+    ds/             Stoico components as Astro markup: Button, Badge, Label, Icon, Mark, Wordmark
+  scripts/          stoico.ts: theme, nav, reveal, pager, parallax, MarbleField, AsciiBanner
   styles/           fonts · stoico/ (the system, verbatim) · site (layout + type primitives)
   assets/fonts/     self-hosted, subset WOFF2 (Geist, Geist Mono, Geist Pixel)
   i18n/ · data/

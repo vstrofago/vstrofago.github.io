@@ -2,7 +2,6 @@
 // Aura hero, mode A02 Atmospheric: ink ground, the MarbleField masked toward the right,
 // Display XL with the quiet half of the line in --fg-muted, and the page's one Ember moment:
 // the accent button. The field follows the cursor by at most 14px (stoico.ts).
-import Label from './ds/Label.astro';
 import Button from './ds/Button.astro';
 import { useTranslations, homeFor, type Lang } from '../i18n/ui';
 import { blogUrl } from '../data/spaces';
@@ -16,11 +15,10 @@ const t = useTranslations(lang);
     <canvas class="marble-field" data-marble data-block-size="4"></canvas>
   </div>
   <div class="container hero__content">
-    <div data-reveal><Label index="00">{t('hero.label')}</Label></div>
-    <h1 id="hero-title" class="display display--xl hero__title" data-reveal style="--reveal-delay:80ms">
+    <h1 id="hero-title" class="display display--xl hero__title" data-reveal>
       {t('hero.title')}<br /><span class="hero__quiet">{t('hero.titleQuiet')}</span>
     </h1>
-    <div class="hero__foot" data-reveal style="--reveal-delay:160ms">
+    <div class="hero__foot" data-reveal style="--reveal-delay:80ms">
       <p class="text text--body-l text--muted hero__lead">{t('hero.lead')}</p>
       <div class="hero__actions">
         <Button variant="accent" size="l" href={`${homeFor(lang)}#work`} iconRight="arrow-right">{t('hero.ctaWork')}</Button>
