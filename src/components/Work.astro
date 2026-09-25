@@ -1,6 +1,8 @@
 ---
 // 01 Work. Sticky label on the left (4 cols), a numbered list on the right (8 cols).
-// Rows are separated by hairlines, not boxed: space before borders.
+// Rows are separated by hairlines, not boxed: space before borders. Three rows per page:
+// stoico.ts pages the list and reveals the pager; without JS every row shows and the
+// pager stays hidden.
 import Label from './ds/Label.astro';
 import Badge from './ds/Badge.astro';
 import Icon from './ds/Icon.astro';
@@ -28,26 +30,33 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <p class="text text--muted">{t('work.lead')}</p>
       </div>
     </div>
-    <ol class="rows">
-      {projects.map((p, i) => (
-        <li class="work">
-          <span class="work__index">{pad(i + 1)}</span>
-          <div class="work__body">
-            <h3 class="heading heading--3">{(p.title ?? placeholder.title)[lang]}</h3>
-            <p class="text text--muted">{(p.description ?? placeholder.description)[lang]}</p>
-            <ul class="work__links">
-              {p.links.map((l) => (
-                <li><a class="st-btn st-btn--link" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={14} /></a></li>
-              ))}
-            </ul>
-          </div>
-          <div class="work__meta">
-            <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
-            <span>{p.category[lang]}</span>
-            <span>{p.tags ?? placeholder.tags[lang]}</span>
-          </div>
-        </li>
-      ))}
-    </ol>
+    <div class="work-list">
+      <ol class="rows" data-paginate="3">
+        {projects.map((p, i) => (
+          <li class="work">
+            <span class="work__index">{pad(i + 1)}</span>
+            <div class="work__body">
+              <h3 class="heading heading--3">{(p.title ?? placeholder.title)[lang]}</h3>
+              <p class="text text--muted">{(p.description ?? placeholder.description)[lang]}</p>
+              <ul class="work__links">
+                {p.links.map((l) => (
+                  <li><a class="st-btn st-btn--link" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={14} /></a></li>
+                ))}
+              </ul>
+            </div>
+            <div class="work__meta">
+              <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
+              <span>{p.category[lang]}</span>
+              <span>{p.tags ?? placeholder.tags[lang]}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <nav class="pager" data-pager aria-label={t('work.pager')} hidden>
+        <button class="st-btn st-btn--secondary st-btn--s" type="button" data-pager-prev><Icon name="arrow-left" size={14} />{t('work.newer')}</button>
+        <span class="pager__status" data-pager-status aria-live="polite"></span>
+        <button class="st-btn st-btn--secondary st-btn--s" type="button" data-pager-next>{t('work.older')}<Icon name="arrow-right" size={14} /></button>
+      </nav>
+    </div>
   </div>
 </section>
