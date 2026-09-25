@@ -35,16 +35,16 @@ export const placeholder = {
 
 export const projects: Project[] = [
   {
-    id: 'jev-chat-moderator',
-    category: { en: 'playground', es: 'playground' },
-    title: { en: 'Jev chat moderator', es: 'Jev chat moderator' },
+    id: 'vigia',
+    category: { en: 'twitch tool', es: 'herramienta para twitch' },
+    title: { en: 'Vigia', es: 'Vigia' },
     description: {
-      en: 'TypeSafe AI\'s Jev moderating a simulated live-stream chat in real time.',
-      es: 'Jev de TypeSafe AI moderando en tiempo real un chat de stream simulado.',
+      en: 'A self-hosted chat watchman for Twitch streamers: rules in plain language, powered by TypeSafe AI\'s Jev.',
+      es: 'Un vigía de chat autoalojado para streamers de Twitch: reglas en lenguaje natural, con Jev de TypeSafe AI.',
     },
-    tags: 'astro / typescript',
-    status: 'live',
-    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/jev-chat-moderator/' }, { kind: 'github', href: 'https://github.com/vstrofago/jev-chat-moderator' }],
+    tags: 'twitch / jev',
+    status: 'wip',
+    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/vigia/' }, { kind: 'github', href: 'https://github.com/vstrofago/vigia' }],
   },
   {
     id: 'zettelkasten-organizer',
