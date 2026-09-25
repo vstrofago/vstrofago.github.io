@@ -1,5 +1,8 @@
 ---
-import StarMark from './StarMark.astro';
+// Sticky nav. Transparent at rest; gains glass and a hairline only after scrolling (stoico.ts
+// toggles .nav--scrolled). Wordmark left, three quiet links, then language and theme.
+import Wordmark from './ds/Wordmark.astro';
+import Icon from './ds/Icon.astro';
 import { languages, useTranslations, homeFor, type Lang } from '../i18n/ui';
 import { blogUrl } from '../data/spaces';
 
@@ -8,30 +11,31 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 const home = homeFor(lang);
 ---
-<header class="site-header">
-  <div class="wrap site-header__inner">
-    <a class="brand" href={home} aria-label={t('a11y.home')}>
-      <StarMark />
-      <span class="brand__name">vstrofago</span>
-    </a>
-    <nav class="site-nav bl-label" aria-label={t('a11y.mainNav')}>
-      <a href={`${home}#projects`}>{t('nav.projects')}</a>
+<header class="nav" data-nav>
+  <div class="container nav__inner">
+    <a class="nav__brand" href={home} aria-label={t('a11y.home')}><Wordmark size={18} /></a>
+    <nav class="nav__links" aria-label={t('a11y.mainNav')}>
+      <a href={`${home}#work`}>{t('nav.work')}</a>
+      <a href={blogUrl}>{t('nav.notes')}</a>
       <a href={`${home}#elsewhere`}>{t('nav.elsewhere')}</a>
-      <a href={blogUrl}>Blog ↗</a>
     </nav>
-    <nav class="lang" aria-label={t('a11y.langNav')}>
-      <div class="bl-tabs">
+    <div class="nav__tools">
+      <nav class="nav__lang" aria-label={t('a11y.langNav')}>
         {(Object.keys(languages) as Lang[]).map((code) => (
-          <a
-            class="bl-tab"
-            href={homeFor(code)}
-            hreflang={code}
-            lang={code}
-            data-ascii-fill
-            aria-current={code === lang ? 'page' : undefined}
-          ><span class="bl-btn__label">{languages[code]}</span></a>
+          <a href={homeFor(code)} hreflang={code} lang={code} aria-current={code === lang ? 'page' : undefined}>{languages[code]}</a>
         ))}
-      </div>
-    </nav>
+      </nav>
+      <button
+        class="st-btn st-btn--ghost st-btn--s st-btn--icon theme-toggle"
+        type="button"
+        data-theme-toggle
+        data-label-light={t('theme.toLight')}
+        data-label-dark={t('theme.toDark')}
+        aria-label={t('theme.toLight')}
+      >
+        <Icon name="sun" size={14} class="theme-toggle__sun" />
+        <Icon name="moon" size={14} class="theme-toggle__moon" />
+      </button>
+    </div>
   </div>
 </header>

@@ -1,38 +1,35 @@
 ---
-import Badge from './ds/Badge.astro';
+// 03 Elsewhere. Same split as Work; each row is one link.
+import Label from './ds/Label.astro';
+import Icon from './ds/Icon.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { spaces } from '../data/spaces';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
-const idx = (i: number) => String(i + 1).padStart(2, '0');
 ---
-<section id="elsewhere" class="section" aria-labelledby="elsewhere-title">
-  <div class="wrap">
-    <div class="section__head">
-      <div class="section__titles">
-        <p class="bl-eyebrow">{t('elsewhere.kicker')}</p>
-        <h2 id="elsewhere-title" class="bl-subtitle">{t('elsewhere.title')}</h2>
+<section id="elsewhere" class="section section--tight-top" aria-labelledby="elsewhere-title">
+  <div class="container split">
+    <div class="split__aside">
+      <div class="split__sticky">
+        <Label index="03">{t('elsewhere.label')}</Label>
+        <h2 id="elsewhere-title" class="heading heading--2">{t('elsewhere.title')}</h2>
       </div>
     </div>
-
-    <ul class="rows" role="list">
-      {spaces.map((s, i) => (
+    <ul class="rows">
+      {spaces.map((s) => (
         <li>
           {s.url ? (
-            <a class="row" href={s.url} rel="me noopener">
-              <span class="row__idx">{idx(i)}</span>
-              <span class="row__name">{s.name[lang]}</span>
-              <span class="row__handle">{s.handle}</span>
-              <span class="row__go bl-label">{t('elsewhere.visit')}</span>
+            <a class="space" href={s.url} rel="noopener">
+              <span class="space__name">{s.name[lang]}</span>
+              <span class="space__handle">{s.handle}</span>
+              <Icon name="arrow-up-right" class="space__arrow" />
             </a>
           ) : (
-            <div class="row row--soon">
-              <span class="row__idx">{idx(i)}</span>
-              <span class="row__name">{s.name[lang]}</span>
-              <span class="row__handle" aria-hidden="true">{s.handle}</span>
-              <span class="row__go"><Badge tone="outline">{t('status.soon')}</Badge></span>
+            <div class="space">
+              <span class="space__name">{s.name[lang]}</span>
+              <span class="space__handle">{s.handle}</span>
             </div>
           )}
         </li>

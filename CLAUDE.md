@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Landing page for **vstrofago** ("Projects, Notes, and other things."). Astro, fully static, deployed to GitHub Pages. Bilingual: English is the default at `/`, Spanish at `/es/`.
+Landing page for **vstrofago** ("Projects, notes and other things."). Astro, fully static, deployed to GitHub Pages. Bilingual: English is the default at `/`, Spanish at `/es/`.
 
 ## Commands
 
@@ -11,41 +11,43 @@ Landing page for **vstrofago** ("Projects, Notes, and other things."). Astro, fu
 ## How it's put together
 
 - `src/pages/index.astro` and `src/pages/es/index.astro` only pick a language and render `src/components/Landing.astro`.
+- Sections, in order: `Header` (sticky nav), `Hero`, `Work` (01), `Approach` (02), `Elsewhere` (03), `NotesBand` (04, the way into the blog), `Footer`.
 - Copy lives in `src/i18n/ui.ts`. Every key exists in both `en` and `es`; add new strings to both. Never hard-code visible text in a component.
-- Content lists live in `src/data/` (`projects.ts`, `spaces.ts`), with `{ en, es }` for anything translated.
+- Content lists live in `src/data/` (`projects.ts`, `spaces.ts`), with `{ en, es }` for anything translated. Octicon paths live in `src/data/icons.ts`.
 - Internal links go through `homeFor(lang)` / `withBase(path)` from `src/i18n/ui.ts`, because the site may be served from a sub-path (`BASE_PATH`). Never write a bare `/something` href.
-- There is no UI framework on the client. The only script is `src/scripts/brutalistoic.ts`, loaded once from `src/layouts/Base.astro`. It attaches behaviour to markup:
-  - `[data-ascii-fill]` on `.bl-btn` / `.bl-tab`: the ASCII fill on hover and focus. Held filled when `aria-current="page"` or `aria-pressed="true"`.
-  - `canvas.bl-bayer`: the animated Bayer dither (the Card ground).
-  - `[data-ascii-banner]`: the AsciiBanner (the logo eaten by something invisible).
-  These are ports of the brutalistoic React bundle; keep the algorithms, ramps and timings as they are. New effects must respect `prefers-reduced-motion` and pause offscreen, like the existing ones.
+- There is no UI framework on the client. The only script is `src/scripts/stoico.ts`, loaded once from `src/layouts/Base.astro`, plus a tiny inline script in `<head>` that applies the stored theme before first paint. `stoico.ts` attaches behaviour to markup:
+  - `[data-theme-toggle]`: dark ⇄ light. Stored in `localStorage` under `stoico-theme`, the same key the blog uses (same origin), so the choice carries over. Every storage access is in `try/catch`; without storage it stays dark.
+  - `[data-nav]`: glass + hairline only after scrolling.
+  - `[data-reveal]`: fade + 16px rise, once. Hidden only when `html.js` is set, so no-JS shows everything.
+  - `[data-parallax]` / `[data-parallax-layer]`: the hero field follows the cursor by ≤14px.
+  - `canvas[data-marble]`: MarbleField. `canvas[data-bayer]`: BayerField (`data-still` for a plate). `[data-ascii-banner]`: AsciiBanner.
+  These are ports of the Stoico React components (`components/motion/*.jsx`); keep the algorithms, ramps and timings as they are. New effects must respect `prefers-reduced-motion` and pause offscreen, like the existing ones.
 
-## Design system: brutalistoic (follow it, don't improvise)
+## Design system: Stoico (follow it, don't improvise)
 
-The source of truth is the brutalistoic design system. `src/styles/tokens.css` and `src/styles/brutalistoic.css` are copies of its `tokens.css` (fonts removed, see `fonts.css`) and `components/bundle.css`. Don't edit them; if the system changes, copy them again. Page layout goes in `src/styles/site.css` and uses tokens only.
+The source of truth is the **Stoico** design system (the vstrofago design language, built in Claude Design). `src/styles/stoico/` mirrors its `tokens/` and `components/` folders verbatim, except `tokens/fonts.css`, which is replaced by the self-hosted `src/styles/fonts.css`. Don't edit them; if the system changes, copy them again. Page layout and the typography primitives go in `src/styles/site.css`, tokens only.
 
-- **One dark theme.** Everything sits on `--bg` (#141414). Surfaces are set apart by a frame (`--bl-line`, 2px), never by a lighter fill. Flat 2D: square corners, no shadows, no gradients as decoration, no translate on press.
-- **Colour.** `--fg` body, `--fgplus` headings and selected states, `--bl-muted` muted text and control borders, `--bl-line` frames, rules and dither (decorative only, never text). `--og` is the brand accent: primary button, selected tab, eyebrow rule, the ASCII bite. At most one other signal colour per piece (`--mg`, `--gr`, `--yl`, `--rd`, `--bl`), and status always carries a word, never colour alone. Links in prose are `--bl`.
+**Philosophy.** One philosophy, four voices. This page speaks **Aura** ("Look at this.", marketing) in mode **A02 Atmospheric**: ink ground, a masked MarbleField behind the hero. Target: 90% calm, 10% surprise. Before shipping anything, run the design test: clarity, breathing, one priority, restraint (could something go?), one memorable moment, coherence, right voice, works without motion, colour or effects.
+
+- **Themes.** Dark is the default (`--bg` #0B0B0A). Light is `[data-theme="light"]` on `<html>`. The Notes band is always ink (`data-theme="dark"` on the section); `site.css` restates the dark aliases for that case.
+- **Colour.** Neutral first; it must work in monochrome. `--fg` / `--fg-muted` / `--fg-subtle` for text, `--border` (hairline) and `--border-strong` (controls). **One accent, Ember `--accent` (#F47B53), for one moment per composition**: on this page, the hero's "See the work" button (and the ASCII bite in the banner). Semantic colours only with a word. In the light theme `--fg-subtle` is lifted to gray-700 in `site.css` so text stays at 4.5:1.
 - **Type, one job per face.**
-  - Jacquard24 (`.bl-gothic`, `.bl-h1`): the page's H1 only, plus the footer wordmark. It runs small, so it is always the largest title on the page. `.bl-gothic` multiplies the *inherited* size by `--gothic-scale` (1.3); the hero overrides that with an explicit `clamp()` size (90px on desktop, the approved design).
-  - Techno Vibe (`.bl-subtitle`, `.bl-eyebrow`, card titles): section heads (28px), eyebrows, card titles.
-  - Space Grotesk: body and interface. `.bl-label` (12px uppercase, tracked) for buttons, tabs, badges and nav; `.bl-caption` (13px, muted) for hints.
-  - Geist Mono: code, ASCII, the brand name in the header, handles.
-  - Sanchez: notes, TL;DR and README titles only (not used on this page). IBM Plex Serif: blog entries only.
-- **Components** (in `src/components/ds/`) mirror the system's React components class for class. Use them rather than new markup:
-  - `Button`: `primary` once per view, `secondary` default, `ghost` text-only. Labels are one or two verbs.
-  - `Card`: kicker, title, a paragraph. `titleFont="gothic"` only if the card *is* the page hero. Cards never get HUD corners.
-  - `Badge`: `accent` (og) for LIVE, `default` for WIP, `outline` for SOON on this site.
-  - `AsciiBanner`: once per page, as a hero or opening banner.
-- **Spacing** on the 4px grid: `--space-1` … `--space-8` (4, 8, 12, 16, 24, 32, 48, 64).
-- **Motion** in steps, not easing, for blinks and ASCII frames; hover fades 150–250ms. Everything stops under reduced motion.
-- **Voice.** Short, direct, no exclamation marks, no emoji. Eyebrows lowercase and letter-spaced (`01 / projects`).
-- **The mark.** The navbar uses the 9×9 pixel star in `StarMark.astro` (same drawing as `public/favicon.svg`), in `--og`.
+  - Geist Pixel (`--font-pixel`): headlines, the hero Display, and every mention of **vstrofago** (always lowercase, via `Wordmark`). Never below ~28px except the wordmark.
+  - Geist (`--font-sans`): everything general. Headings weight 500 with tight tracking; body 15/1.6.
+  - Geist Mono (`--font-mono`): labels (11px, uppercase, +0.08em), indices, handles, metadata, code.
+  - IBM Plex Serif: long-form reading only (the blog), not used here.
+  - Weights stay 400–500: hierarchy comes from scale and space, not bold.
+- **Components** live in `src/components/ds/` and mirror the system's React components class for class: `Button` (`st-btn`: primary once per surface, secondary, ghost, accent for the Aura hero only, link), `Badge`, `Label`, `Icon` (Octicons, inline SVG), `Mark` (the 9×9 pixel star), `Wordmark`, `Frame` (captioned plate, radius 0, "Fig. 01"). Use them rather than new markup.
+- **Layout.** 12-column asymmetric grids: sticky label left (4) + content right (8); the Approach composition puts words in 1–6 and a plate in 8–11, dropped 64px. Marketing sections breathe at 160px. Lists use hairline rows, not boxed cards.
+- **Spacing** on the 4px grid: `--space-1` … `--space-12` (4 … 256). 16 within a group, 48 between groups, 128+ between sections.
+- **Motion** smooth and optional: `--ease-out` for entrances, durations from `--dur-*`. Reveal once, on a section's one moment, not on every block. ASCII ticks at 70–90ms. Everything stops under reduced motion.
+- **Voice.** Calm, precise, a little literary. Sentence case everywhere (buttons, nav, headings). Labels are mono uppercase with an index (`01  Work`). Headlines 2–6 words, often a full sentence with a period. No emoji, no exclamation marks, no hype, no "NEW" badges.
+- **The mark.** The 9×9 pixel star (`Mark.astro`, same drawing as `public/favicon.svg` in Ember).
 
 ## Accessibility
 
-Keep: the skip link, one `h1`, section `aria-labelledby`, a visible 2px `--bl` focus ring, decorative ASCII and canvases `aria-hidden`, `lang`/`hreflang` on the language links. Text contrast stays at 4.5:1 or more (`--bl-muted` on `--bg` is 5.2:1; `--bl-line` is never used for text).
+Keep: the skip link, one `h1`, section `aria-labelledby`, the Stoico focus ring (2px gap + 2px `--fg`), decorative ASCII and canvases `aria-hidden`, `lang`/`hreflang` on the language links, a labelled theme toggle. Text contrast stays at 4.5:1 or more in both themes.
 
 ## Fonts
 
-`src/assets/fonts/` holds WOFF files subset to Latin + Latin-1 plus the arrows, `✦ ✓` and block elements the system uses. If new copy needs other characters, re-subset from the full font files in the design system (fontTools `pyftsubset`).
+`src/assets/fonts/` holds WOFF2 files subset to Latin + Latin-1, general punctuation, arrows and `⌘ ✓ ●`: Geist and Geist Mono (variable, from the `geist` npm package) and Geist Pixel Square (from `@fontsource/geist-pixel`). Geist Pixel has no arrows: never put `→ ↗` in pixel text. If new copy needs other characters, re-subset with fontTools `pyftsubset`.

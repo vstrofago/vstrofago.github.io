@@ -1,0 +1,17 @@
+---
+// Stoico <Label>: mono, uppercase, +0.08em. Marks sections, metadata and small annotations.
+// `index` leads in --fg ("01  Work"). The React component sets inline styles; here they live
+// in site.css as .st-label so the markup stays clean.
+interface Props {
+  index?: string;
+  tone?: 'subtle' | 'default' | 'accent';
+  as?: 'span' | 'p' | 'div' | 'h2' | 'h3';
+  id?: string;
+  class?: string;
+}
+const { index, tone = 'subtle', as: Tag = 'span', id, class: cls } = Astro.props;
+---
+<Tag id={id} class:list={['st-label', tone !== 'subtle' && `st-label--${tone}`, cls]}>
+  {index && <span class="st-label__index">{index}</span>}
+  <slot />
+</Tag>

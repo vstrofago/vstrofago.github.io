@@ -1,0 +1,37 @@
+/* Stoico — typography.
+   Pixel: headlines, heroes, the vstrofago name.  Sans: everything general.
+   Mono: code and anything monospaced (labels, data).  Serif: long-form reading only. */
+:root{
+  --font-pixel:'Geist Pixel','Geist Mono',ui-monospace,monospace;
+  --font-sans:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font-serif:'IBM Plex Serif',Georgia,'Times New Roman',serif;
+
+  /* Scale — size / line-height / tracking */
+  --text-display-xl:clamp(72px,11vw,160px);--lh-display-xl:.88;/* @kind other */--tr-display-xl:-.02em;/* @kind other */
+  --text-display:clamp(56px,7.5vw,104px);--lh-display:.92;/* @kind other */--tr-display:-.015em;/* @kind other */
+  --text-display-s:clamp(40px,5vw,64px);--lh-display-s:1;/* @kind other */--tr-display-s:-.01em;/* @kind other */
+  --text-h1:48px;--lh-h1:1.05;/* @kind other */--tr-h1:-.035em;/* @kind other */
+  --text-h2:32px;--lh-h2:1.12;/* @kind other */--tr-h2:-.03em;/* @kind other */
+  --text-h3:24px;--lh-h3:1.2;/* @kind other */--tr-h3:-.02em;/* @kind other */
+  --text-h4:18px;--lh-h4:1.35;/* @kind other */--tr-h4:-.01em;/* @kind other */
+  --text-body-l:18px;--lh-body-l:1.6;/* @kind other */
+  --text-body:15px;--lh-body:1.6;/* @kind other */
+  --text-small:14px;--lh-small:1.5;/* @kind other */
+  --text-caption:13px;--lh-caption:1.45;/* @kind other */
+  --text-label:11px;--lh-label:1.3;/* @kind other */--tr-label:.08em;/* @kind other */
+  --text-mono:13px;--lh-mono:1.6;/* @kind other */
+  --text-read:20px;--lh-read:1.72;/* @kind other */
+  --measure-read:66ch;/* @kind other */--measure-body:58ch;/* @kind other */--measure-caption:38ch;/* @kind other */
+
+  /* Weights */
+  --weight-light:300;/* @kind other */--weight-regular:400;/* @kind other */--weight-medium:500;/* @kind other */--weight-semibold:600;/* @kind other */
+
+  /* Semantic */
+  --type-display:var(--weight-regular) var(--text-display)/var(--lh-display) var(--font-pixel);
+  --type-heading:var(--weight-medium) var(--text-h2)/var(--lh-h2) var(--font-sans);
+  --type-body:var(--weight-regular) var(--text-body)/var(--lh-body) var(--font-sans);
+  --type-read:var(--weight-regular) var(--text-read)/var(--lh-read) var(--font-serif);
+  --type-mono:var(--weight-regular) var(--text-mono)/var(--lh-mono) var(--font-mono);
+  --type-label:var(--weight-regular) var(--text-label)/var(--lh-label) var(--font-mono);
+}

@@ -1,10 +1,11 @@
 import type { Localized } from '../i18n/ui';
 
-// The "Selected experiments" grid. Edit this list to add real projects.
+// The "Selected experiments" list, numbered in this order. Edit it to add real projects.
 // - `title` / `description`: leave undefined to show the bracketed placeholder.
-// - `links`: shown as small buttons under the card. Every project gets at least one:
+// - `links`: quiet text links on the row, each with an arrow. Every project gets at least one:
 //   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).
-// - `status`: live (og accent badge) · wip (muted outline) · soon (dashed outline).
+// - `status`: live (neutral badge with a dot) · wip (neutral badge) · soon (outline badge).
+//   Always a word, never colour alone; Ember stays reserved for the hero.
 
 export type ProjectStatus = 'live' | 'wip' | 'soon';
 
@@ -34,16 +35,16 @@ export const placeholder = {
 
 export const projects: Project[] = [
   {
-    id: 'jev-chat-moderator',
-    category: { en: 'playground', es: 'playground' },
-    title: { en: 'Jev chat moderator', es: 'Jev chat moderator' },
+    id: 'vigia',
+    category: { en: 'twitch tool', es: 'herramienta para twitch' },
+    title: { en: 'Vigia', es: 'Vigia' },
     description: {
-      en: 'TypeSafe AI\'s Jev moderating a simulated live-stream chat in real time.',
-      es: 'Jev de TypeSafe AI moderando en tiempo real un chat de stream simulado.',
+      en: 'A self-hosted chat watchman for Twitch streamers: rules in plain language, powered by TypeSafe AI\'s Jev.',
+      es: 'Un vigía de chat autoalojado para streamers de Twitch: reglas en lenguaje natural, con Jev de TypeSafe AI.',
     },
-    tags: 'astro / typescript',
-    status: 'live',
-    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/jev-chat-moderator/' }, { kind: 'github', href: 'https://github.com/vstrofago/jev-chat-moderator' }],
+    tags: 'twitch / jev',
+    status: 'wip',
+    links: [{ kind: 'demo', href: 'https://vstrofago.github.io/vigia/' }, { kind: 'github', href: 'https://github.com/vstrofago/vigia' }],
   },
   {
     id: 'zettelkasten-organizer',
