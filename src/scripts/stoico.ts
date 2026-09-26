@@ -248,7 +248,7 @@ function attachMarble(canvas: HTMLCanvasElement): void {
 /* ---------------------------------------------------------------------------------------------
    AsciiBanner (components/motion/AsciiBanner.jsx). A star sampled into ASCII density; it
    assembles (1.4s), something invisible eats it row by row (to 7.6s), the rest is gulped
-   (to 8.4s), and it reforms on an 11s cycle. Three layers: field, star, Ember bite.
+   (to 8.4s), and it reforms on an 11s cycle. Three layers: field, star, the bite (--animation-accent, white here).
    --------------------------------------------------------------------------------------------- */
 function hash(x: number, y: number): number {
   const value = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
