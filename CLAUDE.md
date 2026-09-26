@@ -31,19 +31,19 @@ The source of truth is the **Stoico** design system (the vstrofago design langua
 **Philosophy.** One philosophy, four voices. This page speaks **Aura** ("Look at this.", marketing) in mode **A02 Atmospheric**: ink ground, a masked MarbleField behind the hero. Target: 90% calm, 10% surprise. Before shipping anything, run the design test: clarity, breathing, one priority, restraint (could something go?), one memorable moment, coherence, right voice, works without motion, colour or effects.
 
 - **Themes.** Dark is the default (`--bg` #0B0B0A). Light is `[data-theme="light"]` on `<html>`. The ASCII footer is always ink (`data-theme="dark"` on the footer); `site.css` restates the dark aliases for that case.
-- **Colour.** Neutral first; it must work in monochrome. `--fg` / `--fg-muted` / `--fg-subtle` for text, `--border` (hairline) and `--border-strong` (controls). **One accent, Ember `--accent` (#F47B53), for one moment per composition**: on this page, the hero's "See the work" button (and the ASCII bite in the banner). Semantic colours only with a word. In the light theme `--fg-subtle` is lifted to gray-700 in `site.css` so text stays at 4.5:1.
+- **Colour.** Neutral first; it must work in monochrome. `--fg` / `--fg-muted` / `--fg-subtle` for text, `--border` (hairline) and `--border-strong` (controls). **No colour: the site is black and white.** Stoico's one accent (Ember) is mapped to `--fg` in `site.css` (`--accent`, `--accent-strong`, `--animation-accent`, `--selection`), so its moments (the hero's primary button, the ASCII bite) stay monochrome. Don't reintroduce Ember or signal colours. Semantic colours only with a word. In the light theme `--fg-subtle` is lifted to gray-700 in `site.css` so text stays at 4.5:1.
 - **Type, one job per face.**
   - Geist Pixel (`--font-pixel`): headlines, the hero Display, and every mention of **vstrofago** (always lowercase, via `Wordmark`). Never below ~28px except the wordmark.
   - Geist (`--font-sans`): everything general. Headings weight 500 with tight tracking; body 15/1.6.
   - Geist Mono (`--font-mono`): labels (11px, uppercase, +0.08em), indices, handles, metadata, code.
   - IBM Plex Serif: long-form reading only (the blog), not used here.
   - Weights stay 400–500: hierarchy comes from scale and space, not bold.
-- **Components** live in `src/components/ds/` and mirror the system's React components class for class: `Button` (`st-btn`: primary once per surface, secondary, ghost, accent for the Aura hero only, link), `Badge`, `Label`, `Icon` (Octicons, inline SVG), `Mark` (the 9×9 pixel star), `Wordmark`. Use them rather than new markup.
+- **Components** live in `src/components/ds/` and mirror the system's React components class for class: `Button` (`st-btn`: primary once per surface, secondary, ghost, link; `accent` is not used here), `Badge`, `Label`, `Icon` (Octicons, inline SVG), `Mark` (the 9×9 pixel star), `Wordmark`. Use them rather than new markup.
 - **Layout.** 12-column asymmetric grids: sticky label left (4) + content right (8). Marketing sections breathe at 160px. Lists use hairline rows, not boxed cards.
 - **Spacing** on the 4px grid: `--space-1` … `--space-12` (4 … 256). 16 within a group, 48 between groups, 128+ between sections.
 - **Motion** smooth and optional: `--ease-out` for entrances, durations from `--dur-*`. Reveal once, on a section's one moment, not on every block. ASCII ticks at 70–90ms. Everything stops under reduced motion.
 - **Voice.** Calm, precise, a little literary. Sentence case everywhere (buttons, nav, headings). Labels are mono uppercase with an index (`01  Work`). Headlines 2–6 words, often a full sentence with a period. No emoji, no exclamation marks, no hype, no "NEW" badges.
-- **The mark.** The 9×9 pixel star (`Mark.astro`, same drawing as `public/favicon.svg` in Ember).
+- **The mark.** The 9×9 pixel star (`Mark.astro`, same drawing as `public/favicon.svg`, which is white on dark tabs and ink on light ones).
 
 ## Accessibility
 

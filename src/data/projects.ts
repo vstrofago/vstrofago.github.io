@@ -5,7 +5,7 @@ import type { Localized } from '../i18n/ui';
 // - `links`: quiet text links on the row, each with an arrow. Every project gets at least one:
 //   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).
 // - `status`: live (neutral badge with a dot) · wip (neutral badge) · soon (outline badge).
-//   Always a word, never colour alone; Ember stays reserved for the hero.
+//   Always a word, never colour alone: the site is black and white.
 
 export type ProjectStatus = 'live' | 'wip' | 'soon';
 

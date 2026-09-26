@@ -18,9 +18,18 @@ body { margin: 0; min-height: 100vh; }
   --border: rgba(237,237,234,.09); --border-strong: rgba(237,237,234,.18); --border-focus: #EDEDEA;
   --hover: rgba(237,237,234,.05); --active: rgba(237,237,234,.09);
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px #EDEDEA;
-  --accent-strong: var(--ember-300);
   background: var(--bg); color: var(--fg);
 }
+/* Monochrome. vstrofago's pages carry no colour: Stoico's one accent (Ember) is mapped to
+   the text colour, so every accent moment (buttons, the ASCII bite, selection) is black
+   and white. The system files stay untouched; this only redefines their aliases. */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --accent: var(--fg); --accent-fg: var(--bg); --accent-strong: var(--fg);
+  --accent-subtle: var(--active); --animation-accent: var(--fg);
+}
+:root, [data-theme="dark"] { --selection: rgba(237, 237, 234, 0.22); }
+[data-theme="light"] { --selection: rgba(11, 11, 10, 0.14); }
+
 /* Contrast: on paper, --fg-subtle (gray-600) is 3.6:1. Text must reach 4.5:1, so subtle text
    borrows gray-700 (5.2:1) in the light theme. */
 [data-theme="light"] { --fg-subtle: var(--gray-700); }
@@ -60,7 +69,6 @@ body { margin: 0; min-height: 100vh; }
    when they sit on an <a>. Restate what an anchor-rendered component needs. */
 .stoico a:where(.st-btn:not(.st-btn--link), .space, .skip-link, .nav__brand) { text-decoration: none; }
 .stoico a.st-btn--primary { color: var(--bg); }
-.stoico a.st-btn--accent { color: var(--ink); }
 .stoico a:where(.st-btn--secondary, .st-btn--ghost, .st-btn--link, .space) { color: var(--fg); }
 .stoico a.skip-link { color: var(--bg); }
 
