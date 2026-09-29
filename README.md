@@ -15,6 +15,27 @@ npm run preview   # serve dist/ locally
 
 Node 20.3 or newer.
 
+### With Docker
+
+No Node needed on the host, only Docker:
+
+```sh
+docker compose up                        # dev server with hot reload: http://localhost:4321
+docker compose --profile build up serve  # the static build behind nginx: http://localhost:8080
+docker compose down                      # stop
+```
+
+To compare two branches side by side, check each one out in its own worktree and give each its own ports and project name:
+
+```sh
+git worktree add ../vstro-a claude/practical-ramanujan-tlu07e
+git worktree add ../vstro-b claude/transmision-tlu07e
+(cd ../vstro-a && COMPOSE_BRANCH=a PORT=4321 docker compose up -d)
+(cd ../vstro-b && COMPOSE_BRANCH=b PORT=4322 docker compose up -d)
+```
+
+After `package.json` changes, rebuild with `docker compose up --build`.
+
 ## Deploy to GitHub Pages
 
 1. Push this folder to a GitHub repository.

@@ -1,0 +1,20 @@
+# docker compose up                      → dev server with hot reload at http://localhost:4321
+# docker compose --profile build up      → the static build behind nginx at http://localhost:8080
+# PORT / BUILD_PORT change the host ports, so two branches can run side by side (see README).
+name: vstrofago-${COMPOSE_BRANCH:-landing}
+
+services:
+  dev:
+    build: { context: ., target: dev }
+    ports: ["${PORT:-4321}:4321"]
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      # Polling makes hot reload reliable on Docker Desktop (macOS / Windows) bind mounts.
+      CHOKIDAR_USEPOLLING: "true"
+
+  serve:
+    profiles: [build]
+    build: { context: ., target: serve }
+    ports: ["${BUILD_PORT:-8080}:80"]
