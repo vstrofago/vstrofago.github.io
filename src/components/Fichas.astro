@@ -1,0 +1,72 @@
+---
+// One card per body, as a native <dialog>: the star seen up close. Left, its planet, drawn
+// large and turning (dithered 1-bit, like the MarbleField); right, the catalog entry. The
+// planet says the status without colour: a formed world (live), a world half wireframe
+// (in progress, "under construction"), a disc of dust around a faint core (soon).
+// Closed dialogs render nothing, so without JS these are inert; the stars fall back to the
+// catalog rows. src/scripts/cosmos.ts opens them, and moves between them with previous / next.
+import Label from './ds/Label.astro';
+import Icon from './ds/Icon.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder } from '../data/projects';
+import { placeOf, catalogId, constellationOf, coordsOf, magnitude } from '../data/sky';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const linkLabel = { demo: t('catalog.demo'), github: t('catalog.github'), more: t('catalog.more') };
+const statusLabel = { live: t('status.live'), wip: t('status.wip'), soon: t('status.soon') };
+const planetLabel = { live: t('planet.live'), wip: t('planet.wip'), soon: t('planet.soon') };
+---
+{projects.map((p, i) => {
+  const id = catalogId(i);
+  const key = id.toLowerCase();
+  const at = placeOf(p.id);
+  const constellation = constellationOf(p.id);
+  const prev = catalogId((i - 1 + projects.length) % projects.length).toLowerCase();
+  const next = catalogId((i + 1) % projects.length).toLowerCase();
+  return (
+    <dialog class="ficha" id={`ficha-${key}`} aria-labelledby={`ficha-${key}-title`} data-ficha={key}>
+      <div class="ficha__inner">
+        <div class="ficha__planet">
+          <canvas
+            class="planet planet--large"
+            aria-hidden="true"
+            data-planet={p.id}
+            data-status={p.status}
+            data-kind={at.planet.kind}
+            data-ring={at.planet.ring ? '' : undefined}
+            data-moon={at.planet.moon ? '' : undefined}
+            data-tilt={at.planet.tilt ?? 0}
+            data-block-size="3"
+            data-spin
+          ></canvas>
+          <p class="ficha__caption">{planetLabel[p.status]}</p>
+        </div>
+        <div class="ficha__data">
+          <Label index={id}>{p.category[lang]}</Label>
+          <h2 id={`ficha-${key}-title`} class="heading heading--1">{(p.title ?? placeholder.title)[lang]}</h2>
+          <p class="text text--body-l text--muted">{(p.description ?? placeholder.description)[lang]}</p>
+          <dl class="ficha__facts">
+            {constellation && (<div><dt>{t('ficha.constellation')}</dt><dd>{constellation}</dd></div>)}
+            <div><dt>{t('ficha.magnitude')}</dt><dd>{magnitude[p.status]} · {statusLabel[p.status]}</dd></div>
+            <div><dt>{t('ficha.composition')}</dt><dd>{p.tags ?? placeholder.tags[lang]}</dd></div>
+            <div><dt>{t('ficha.coords')}</dt><dd>{coordsOf(at.x, at.y)}</dd></div>
+          </dl>
+          <ul class="ficha__links">
+            {p.links.map((l) => (
+              <li><a class="st-btn st-btn--secondary st-btn--m" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={16} /></a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="ficha__nav">
+          <button class="st-btn st-btn--ghost st-btn--s" type="button" data-ficha-go={prev}><Icon name="arrow-left" size={14} />{t('ficha.prev')}</button>
+          <button class="st-btn st-btn--ghost st-btn--s" type="button" data-ficha-go={next}>{t('ficha.next')}<Icon name="arrow-right" size={14} /></button>
+        </div>
+        <form method="dialog" class="ficha__close">
+          <button class="st-btn st-btn--ghost st-btn--s st-btn--icon" type="submit" aria-label={t('ficha.close')}><Icon name="x" size={14} /></button>
+        </form>
+      </div>
+    </dialog>
+  );
+})}

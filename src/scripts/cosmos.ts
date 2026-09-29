@@ -1,0 +1,402 @@
+// The star chart's behaviours, on top of stoico.ts (same rules: plain DOM, monochrome, every
+// effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
+//
+//   [data-starfield]      faint deterministic stars behind the chart, a few of them twinkling
+//   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
+//   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
+//   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
+//   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
+//   [data-orbit-day]      "Day 0007": days since the site went up
+
+import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
+import { coordsOf } from '../data/sky';
+
+/** Planets and the starfield tick like the ASCII banner: 70–90ms, never every frame. */
+const TICK = 80;
+
+function strHash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return (h >>> 0) / 4294967296;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Starfield: one CSS pixel per canvas pixel, positions from a hash so every visit sees the same
+   sky. About one star per 2,600px²; one in twelve twinkles.
+   --------------------------------------------------------------------------------------------- */
+function attachStarfield(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  let stars: { x: number; y: number; s: number; a: number; tw: boolean }[] = [];
+  let rgb: [number, number, number] = [237, 237, 234];
+  let visible = true, frame = 0;
+
+  const draw = (): void => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < stars.length; i++) {
+      const st = stars[i];
+      let a = st.a;
+      if (st.tw) a *= 0.35 + 0.65 * Math.abs(Math.sin(frame * 0.09 + i));
+      ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
+      ctx.fillRect(st.x, st.y, st.s, st.s);
+    }
+  };
+  const size = (): void => {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(r.width));
+    canvas.height = Math.max(1, Math.round(r.height));
+    const count = Math.round((canvas.width * canvas.height) / 2600);
+    stars = Array.from({ length: count }, (_, i) => {
+      const h = mhash(i, 7);
+      return {
+        x: Math.floor(mhash(i, 1) * canvas.width),
+        y: Math.floor(mhash(i, 2) * canvas.height),
+        s: h > 0.93 ? 2 : 1,
+        a: 0.18 + mhash(i, 3) * 0.5,
+        tw: h > 0.92,
+      };
+    });
+    rgb = toRGB(canvas.parentElement ?? document.body, getComputedStyle(canvas).color);
+    draw();
+  };
+
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
+  document.addEventListener('stoico:theme', size);
+  watchVisibility(canvas, (v) => { visible = v; });
+  size();
+  window.setInterval(() => {
+    if (reduced() || !visible || document.hidden) return;
+    frame++;
+    draw();
+  }, TICK * 1.5);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Planets. A sphere lit from the upper left, its surface from 3D value noise (continents for
+   rocky worlds, bands for gas giants), optionally a ring and a moon, all thresholded against
+   the same 4×4 Bayer matrix as the MarbleField. The status is drawn, not coloured:
+     live  a formed world
+     wip   part of the surface is still a wireframe: under construction
+     soon  a faint core inside a disc of dust
+   --------------------------------------------------------------------------------------------- */
+function hash3(x: number, y: number, z: number): number {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+const sm = (t: number): number => t * t * (3 - 2 * t);
+function noise3(x: number, y: number, z: number): number {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = sm(x - ix), fy = sm(y - iy), fz = sm(z - iz);
+  const l = (a: number, b: number, t: number): number => a + (b - a) * t;
+  return l(
+    l(l(hash3(ix, iy, iz), hash3(ix + 1, iy, iz), fx), l(hash3(ix, iy + 1, iz), hash3(ix + 1, iy + 1, iz), fx), fy),
+    l(l(hash3(ix, iy, iz + 1), hash3(ix + 1, iy, iz + 1), fx), l(hash3(ix, iy + 1, iz + 1), hash3(ix + 1, iy + 1, iz + 1), fx), fy),
+    fz,
+  );
+}
+function fbm3(x: number, y: number, z: number, octaves: number): number {
+  let v = 0, amp = 0.5, fr = 1, n = 0;
+  for (let i = 0; i < octaves; i++) { v += amp * noise3(x * fr, y * fr, z * fr); n += amp; amp *= 0.5; fr *= 2.03; }
+  return v / n;
+}
+const LIGHT = (() => { const l = [-0.55, -0.6, 0.58]; const m = Math.hypot(l[0], l[1], l[2]); return l.map((v) => v / m); })();
+
+interface PlanetControl { play(): void; pause(): void }
+
+function attachPlanet(canvas: HTMLCanvasElement): PlanetControl {
+  const noop = { play() {}, pause() {} };
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return noop;
+  const ds = canvas.dataset;
+  const block = Number(ds.blockSize ?? 3);
+  const status = ds.status ?? 'live';
+  const gas = ds.kind === 'gas';
+  const soon = status === 'soon';
+  const ring = ds.ring !== undefined && !soon;
+  const moon = ds.moon !== undefined && !soon;
+  const tilt = (Number(ds.tilt ?? 0) * Math.PI) / 180;
+  const seed = strHash(ds.planet ?? 'x');
+  const off = seed * 97;
+  let spin = seed * Math.PI * 2;
+  let w = 0, h = 0, timer = 0, visible = true, playing = false;
+  let img: ImageData | null = null;
+  let rgb: [number, number, number] = [237, 237, 234];
+
+  const draw = (): void => {
+    if (!img) return;
+    const d = img.data;
+    const R = Math.min(w, h) * (ring || soon ? 0.215 : moon ? 0.26 : 0.4);
+    const core = soon ? 0.42 : 1;
+    const cx = w / 2, cy = h / 2;
+    const ct = Math.cos(tilt), st = Math.sin(tilt);
+    const ca = Math.cos(spin), sa = Math.sin(spin);
+    const mAng = spin * 2.6 + seed * 6;
+    const mdx = Math.cos(mAng) * 1.7, mdy = Math.sin(mAng) * 0.3 * 1.7;
+    const mx = mdx * ct - mdy * st, my = mdx * st + mdy * ct, mFront = Math.sin(mAng) > 0, mr = 0.2;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const dx = (x + 0.5 - cx) / R, dy = (y + 0.5 - cy) / R;
+        const tx = dx * ct + dy * st, ty = -dx * st + dy * ct;
+        let val = -1;
+
+        // Ring or dust disc, in the tilted plane, flattened to an ellipse.
+        let band = -1;
+        const ry = ty / 0.3, rr = Math.sqrt(tx * tx + ry * ry);
+        if (ring && rr > 1.35 && rr < 2.15 && Math.abs(rr - 1.78) > 0.05) {
+          band = 0.42 + 0.3 * Math.sin(rr * 21) + 0.12 * (1 - Math.abs(ry) / 2.2);
+        } else if (soon && rr > 0.5 && rr < 2.3) {
+          const a = Math.atan2(ry, tx);
+          const swirl = fbm3(Math.cos(a - spin * 1.4 + rr * 1.3) * 2 + off, Math.sin(a - spin * 1.4 + rr * 1.3) * 2, rr * 2.2, 3);
+          band = Math.max(0, swirl * 1.25 - 0.28) * (1 - Math.abs(rr - 1.3) / 1.1);
+        }
+        const bandFront = ty > 0;
+
+        // The sphere.
+        const qx = dx / core, qy = dy / core, d2 = qx * qx + qy * qy;
+        if (d2 <= 1) {
+          const nz = Math.sqrt(1 - d2);
+          const qtx = tx / core, qty = ty / core;
+          const bx = qtx * ca + nz * sa, bz = -qtx * sa + nz * ca, by = qty;
+          const lambert = Math.max(0, qx * LIGHT[0] + qy * LIGHT[1] + nz * LIGHT[2]);
+          const light = 0.06 + 0.94 * Math.pow(lambert, 0.85);
+          let s: number;
+          if (gas) {
+            s = 0.52 + 0.34 * Math.sin(by * 9.5 + 3.2 * fbm3(bx * 1.6 + off, by * 1.6, bz * 1.6, 3));
+          } else {
+            const n = fbm3(bx * 2.1 + off, by * 2.1, bz * 2.1, 4);
+            const land = sm(Math.min(1, Math.max(0, (n - 0.47) / 0.09)));
+            s = 0.3 + 0.62 * land + 0.2 * (n - 0.5);
+          }
+          val = s * light * (soon ? 0.85 : 1);
+
+          if (status === 'wip') {
+            const lon = Math.atan2(bx, bz), lat = Math.asin(Math.max(-1, Math.min(1, by)));
+            if (Math.sin(lon + seed * 6) < -0.15) {
+              const gl = Math.abs(((lon / (Math.PI / 6)) % 1 + 1) % 1 - 0.5) > 0.42;
+              const gp = Math.abs(((lat / (Math.PI / 8)) % 1 + 1) % 1 - 0.5) > 0.4;
+              val = gl || gp || d2 > 0.9 ? 0.75 * (0.35 + 0.65 * nz) : 0;
+            }
+          }
+          if (band >= 0 && bandFront) val = band;
+        } else if (band >= 0) {
+          val = band;
+        }
+
+        // The moon: in front of the planet or hidden behind it.
+        if (moon) {
+          const ex = (dx - mx) / mr, ey = (dy - my) / mr, e2 = ex * ex + ey * ey;
+          if (e2 <= 1 && (mFront || d2 > 1)) {
+            const ez = Math.sqrt(1 - e2);
+            val = 0.08 + 0.85 * Math.max(0, ex * LIGHT[0] + ey * LIGHT[1] + ez * LIGHT[2]);
+          }
+        }
+
+        const on = val > (BAYER4[y & 3][x & 3] + 0.5) / 16, i = (y * w + x) * 4;
+        d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = on ? 255 : 0;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  const recolor = (): void => { rgb = toRGB(canvas.parentElement ?? document.body, getComputedStyle(canvas).color); };
+  const size = (): void => {
+    // Layout size, not getBoundingClientRect: the card zooms the planet in with a transform.
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;
+    w = Math.max(8, Math.round(cw / block));
+    h = Math.max(8, Math.round(ch / block));
+    canvas.width = w;
+    canvas.height = h;
+    img = ctx.createImageData(w, h);
+    recolor();
+    draw();
+  };
+  const tick = (): void => {
+    if (!visible || document.hidden) return;
+    spin += gas ? 0.03 : 0.022;
+    draw();
+  };
+  const run = (): void => {
+    window.clearInterval(timer);
+    timer = playing && !reduced() ? window.setInterval(tick, TICK) : 0;
+  };
+
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
+  watchVisibility(canvas, (v) => { visible = v; });
+  document.addEventListener('stoico:theme', () => { recolor(); draw(); });
+  reducedQuery()?.addEventListener?.('change', run);
+  size();
+  return {
+    play() { playing = true; run(); },
+    pause() { playing = false; run(); },
+  };
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Chart readout: where the cursor is on the sky, or which star it is over.
+   --------------------------------------------------------------------------------------------- */
+function initReadout(): void {
+  const sky = document.querySelector<HTMLElement>('[data-sky]');
+  const out = document.querySelector<HTMLElement>('[data-readout-out]');
+  if (!sky || !out) return;
+  const idle = out.dataset.idle ?? '';
+  let pinned = false;
+  sky.addEventListener('pointermove', (e) => {
+    if (pinned) return;
+    const r = sky.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    out.textContent = coordsOf(Math.max(0, Math.min(99.9, x)), Math.max(0, Math.min(100, y)));
+  });
+  sky.addEventListener('pointerleave', () => { if (!pinned) out.textContent = idle; });
+  sky.querySelectorAll<HTMLElement>('[data-readout]').forEach((star) => {
+    const show = (): void => { pinned = true; out.textContent = star.dataset.readout ?? ''; };
+    const hide = (): void => { pinned = false; out.textContent = idle; };
+    star.addEventListener('pointerenter', show);
+    star.addEventListener('pointerleave', hide);
+    star.addEventListener('focus', show);
+    star.addEventListener('blur', hide);
+  });
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Cards. A star, a row's "Look closer", or a card's previous / next opens the matching dialog;
+   Escape, the close button or a click outside closes it, and focus goes back to whatever opened
+   the first one. Without <dialog> support the stars keep their plain link to the catalog row.
+   --------------------------------------------------------------------------------------------- */
+function initFichas(planets: Map<HTMLCanvasElement, PlanetControl>): void {
+  const dialogs = new Map<string, HTMLDialogElement>();
+  document.querySelectorAll<HTMLDialogElement>('dialog[data-ficha]').forEach((d) => dialogs.set(d.dataset.ficha ?? '', d));
+  if (!dialogs.size || typeof HTMLDialogElement === 'undefined' || !('showModal' in HTMLDialogElement.prototype)) return;
+
+  let opener: HTMLElement | null = null;
+  let current: HTMLDialogElement | null = null;
+  const planetOf = (d: HTMLDialogElement) => {
+    const c = d.querySelector<HTMLCanvasElement>('canvas[data-planet]');
+    return c ? planets.get(c) : undefined;
+  };
+  const open = (key: string): void => {
+    const next = dialogs.get(key);
+    if (!next) return;
+    if (current && current !== next) {
+      const prev = current;
+      current = null;
+      prev.close();
+    }
+    if (!opener) opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    current = next;
+    next.showModal();
+    planetOf(next)?.play();
+  };
+
+  dialogs.forEach((d) => {
+    d.addEventListener('close', () => {
+      planetOf(d)?.pause();
+      if (current === d) {
+        current = null;
+        opener?.focus();
+        opener = null;
+      }
+    });
+    // A click on the backdrop lands on the <dialog> itself.
+    d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+  });
+
+  document.addEventListener('click', (e) => {
+    const el = (e.target as Element | null)?.closest<HTMLElement>('[data-star], [data-ficha-open], [data-ficha-go]');
+    if (!el) return;
+    const key = el.dataset.star ?? el.dataset.fichaOpen ?? el.dataset.fichaGo;
+    if (!key || !dialogs.has(key)) return;
+    e.preventDefault();
+    open(key);
+  });
+  document.querySelectorAll<HTMLElement>('[data-closer]').forEach((li) => { li.hidden = false; });
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Screensaver: the old Starfield, flying outward from the centre, in the page's two tones.
+   --------------------------------------------------------------------------------------------- */
+function initScreensaver(): void {
+  const box = document.querySelector<HTMLElement>('[data-screensaver]');
+  const canvas = box?.querySelector('canvas');
+  const ctx = canvas?.getContext('2d');
+  if (!box || !canvas || !ctx) return;
+  const IDLE = 60_000;
+  let timer = 0, raf = 0, on = false;
+  let stars: { x: number; y: number; z: number }[] = [];
+  let rgb: [number, number, number] = [237, 237, 234];
+
+  const frame = (): void => {
+    raf = requestAnimationFrame(frame);
+    const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2;
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      s.z -= 0.0045;
+      if (s.z <= 0.02) { s.x = Math.random() * 2 - 1; s.y = Math.random() * 2 - 1; s.z = 1; }
+      const px = cx + (s.x / s.z) * cx, py = cy + (s.y / s.z) * cy;
+      if (px < 0 || px > W || py < 0 || py > H) { s.z = 0; continue; }
+      const k = 1 - s.z, size = k > 0.8 ? 3 : k > 0.5 ? 2 : 1;
+      ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${Math.min(1, k * 1.4).toFixed(3)})`;
+      ctx.fillRect(Math.round(px), Math.round(py), size, size);
+    }
+  };
+  const show = (): void => {
+    if (on || reduced() || document.hidden || document.querySelector('dialog[open]')) return arm();
+    on = true;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    rgb = toRGB(box, getComputedStyle(box).color);
+    stars = Array.from({ length: 260 }, () => ({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() }));
+    box.hidden = false;
+    requestAnimationFrame(() => box.classList.add('is-on'));
+    frame();
+  };
+  const wake = (): void => {
+    if (on) {
+      on = false;
+      box.classList.remove('is-on');
+      window.setTimeout(() => { if (!on) { box.hidden = true; cancelAnimationFrame(raf); } }, 600);
+    }
+    arm();
+  };
+  function arm(): void {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(show, IDLE);
+  }
+  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart']) {
+    window.addEventListener(ev, wake, { passive: true, capture: true });
+  }
+  arm();
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Days in orbit, counted from the launch date in the markup.
+   --------------------------------------------------------------------------------------------- */
+function initOrbitDay(): void {
+  document.querySelectorAll<HTMLElement>('[data-orbit-day]').forEach((el) => {
+    const start = Date.parse(`${el.dataset.orbitDay}T00:00:00`);
+    if (Number.isNaN(start)) return;
+    const day = Math.max(1, Math.floor((Date.now() - start) / 86_400_000) + 1);
+    el.textContent = ` · ${el.dataset.label ?? ''} ${String(day).padStart(4, '0')}`;
+  });
+}
+
+export function initCosmos(): void {
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
+  const planets = new Map<HTMLCanvasElement, PlanetControl>();
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-planet]').forEach((c) => {
+    const control = attachPlanet(c);
+    planets.set(c, control);
+    // Catalog thumbnails turn while their row is hovered.
+    const row = c.closest<HTMLElement>('li');
+    if (row && !c.hasAttribute('data-spin')) {
+      row.addEventListener('pointerenter', () => control.play());
+      row.addEventListener('pointerleave', () => control.pause());
+    }
+  });
+  initReadout();
+  initFichas(planets);
+  initScreensaver();
+  initOrbitDay();
+}

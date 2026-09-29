@@ -1,0 +1,10 @@
+---
+// After a minute without input, the page drifts into a starfield, the way desktops did around
+// 2000; any key, click, scroll or movement wakes it. Purely decorative (aria-hidden, no focus),
+// never under reduced motion, and never while a card is open. Driven by cosmos.ts.
+import Mark from './ds/Mark.astro';
+---
+<div class="screensaver" data-screensaver aria-hidden="true" hidden>
+  <canvas class="screensaver__field"></canvas>
+  <span class="screensaver__mark"><Mark size={36} /></span>
+</div>

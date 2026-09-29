@@ -1,6 +1,6 @@
 import type { Localized } from '../i18n/ui';
 
-// The "Selected experiments" list, numbered in this order. Edit it to add real projects.
+// The projects: stars on the chart, rows in the catalog, numbered VS-001… in this order. Edit it to add real projects.
 // - `title` / `description`: leave undefined to show the bracketed placeholder.
 // - `links`: quiet text links on the row, each with an arrow. Every project gets at least one:
 //   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).

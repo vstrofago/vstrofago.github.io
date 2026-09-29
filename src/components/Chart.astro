@@ -1,0 +1,88 @@
+---
+// 00 Star chart: the page's one memorable moment, in place of a marketing hero. The sky is a
+// coordinate grid over a masked MarbleField (the nebula) and a field of faint stars. Every
+// project is a star, sized by magnitude (live bright, in progress pulsing, soon faint), joined
+// into constellations by hairlines. Each star is a link to its catalog row, so without JS the
+// chart is a table of contents; with JS it opens the body's card (Fichas.astro) instead.
+import Label from './ds/Label.astro';
+import Mark from './ds/Mark.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder } from '../data/projects';
+import { constellations, placeOf, catalogId, coordsOf, magnitude } from '../data/sky';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const stars = projects.map((p, i) => ({ p, id: catalogId(i), at: placeOf(p.id) }));
+const byId = new Map(stars.map((s) => [s.p.id, s.at]));
+const lines = constellations.flatMap((c) =>
+  c.members.slice(1).flatMap((m, i) => {
+    const a = byId.get(c.members[i]);
+    const b = byId.get(m);
+    return a && b ? [{ a, b }] : [];
+  }),
+);
+const size = { live: 18, wip: 14, soon: 9 } as const;
+const ra = Array.from({ length: 11 }, (_, i) => (i + 1) * (100 / 12));
+const dec = Array.from({ length: 5 }, (_, i) => (i + 1) * (100 / 6));
+---
+<section class="chart" aria-labelledby="chart-title" data-chart data-parallax>
+  <div class="chart__intro container">
+    <div class="chart__copy" data-reveal>
+      <Label index="00">{t('chart.label')}</Label>
+      <h1 id="chart-title" class="display display--xl chart__title">{t('chart.title')}</h1>
+      <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
+    </div>
+  </div>
+
+  <div class="chart__sky" data-sky>
+    <div class="chart__field" data-parallax-layer aria-hidden="true">
+      <canvas class="marble-field chart__nebula" data-marble data-block-size="4" data-speed="0.6"></canvas>
+      <canvas class="chart__stars-bg" data-starfield></canvas>
+    </div>
+
+    <svg class="chart__grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      {ra.map((x) => <line class="chart__rule" x1={x} y1="0" x2={x} y2="100" vector-effect="non-scaling-stroke" />)}
+      {dec.map((y) => <line class="chart__rule" x1="0" y1={y} x2="100" y2={y} vector-effect="non-scaling-stroke" />)}
+      <path class="chart__ecliptic" d="M0 70 C 25 48, 60 30, 100 38" vector-effect="non-scaling-stroke" />
+      {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
+    </svg>
+
+    <ul class="chart__ticks" aria-hidden="true">
+      {ra.map((x, i) => <li style={`--x:${x}`}>{String((i + 1) * 2).padStart(2, '0')}h</li>)}
+    </ul>
+
+    <ul class="chart__constellations" aria-hidden="true">
+      {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
+    </ul>
+
+    <ol class="chart__stars" aria-label={t('chart.stars')}>
+      {stars.map(({ p, id, at }) => (
+        <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
+          <a
+            class="star__link"
+            href={`#${id.toLowerCase()}`}
+            data-star={id.toLowerCase()}
+            data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
+          >
+            <span class="star__glyph"><Mark size={size[p.status]} /></span>
+            <span class="star__label">
+              <span class="star__id">{id}</span>
+              <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+
+    <div class="chart__foot" aria-hidden="true">
+      <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>
+      <ul class="chart__legend">
+        <li><span class="star--live"><Mark size={12} /></span>{t('status.live')}</li>
+        <li><span class="star--wip"><Mark size={10} /></span>{t('status.wip')}</li>
+        <li><span class="star--soon"><Mark size={8} /></span>{t('status.soon')}</li>
+      </ul>
+    </div>
+  </div>
+</section>

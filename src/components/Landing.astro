@@ -1,11 +1,14 @@
 ---
 // The whole landing for one language. Each page in src/pages just picks the language.
+// A star chart, the catalog behind it, the cards the stars open, elsewhere, the footer.
 import Base from '../layouts/Base.astro';
 import Header from './Header.astro';
-import Hero from './Hero.astro';
-import Work from './Work.astro';
+import Chart from './Chart.astro';
+import Catalog from './Catalog.astro';
+import Fichas from './Fichas.astro';
 import Elsewhere from './Elsewhere.astro';
 import Footer from './Footer.astro';
+import Screensaver from './Screensaver.astro';
 import type { Lang } from '../i18n/ui';
 
 interface Props { lang: Lang }
@@ -14,9 +17,11 @@ const { lang } = Astro.props;
 <Base lang={lang}>
   <Header lang={lang} />
   <main id="main">
-    <Hero lang={lang} />
-    <Work lang={lang} />
+    <Chart lang={lang} />
+    <Catalog lang={lang} />
     <Elsewhere lang={lang} />
+    <Fichas lang={lang} />
   </main>
   <Footer lang={lang} />
+  <Screensaver />
 </Base>

@@ -1,4 +1,4 @@
-/* Page layout for the landing (Aura voice, mode A02 Atmospheric).
+/* Page layout for the landing (Aura voice, mode A02 Atmospheric): a star chart.
    Colour, type, spacing, radius and motion come from the Stoico tokens; components from
    components.css. This file only places things and sets the typography primitives
    (Display / Heading / Text / Label / Wordmark), which the system ships as inline-styled React.
@@ -67,9 +67,9 @@ body { margin: 0; min-height: 100vh; }
 
 /* base.css styles every `.stoico a` (0,1,1), which outranks the single-class component rules
    when they sit on an <a>. Restate what an anchor-rendered component needs. */
-.stoico a:where(.st-btn:not(.st-btn--link), .space, .skip-link, .nav__brand) { text-decoration: none; }
+.stoico a:where(.st-btn:not(.st-btn--link), .space, .skip-link, .nav__brand, .star__link, .badge88) { text-decoration: none; }
 .stoico a.st-btn--primary { color: var(--bg); }
-.stoico a:where(.st-btn--secondary, .st-btn--ghost, .st-btn--link, .space) { color: var(--fg); }
+.stoico a:where(.st-btn--secondary, .st-btn--ghost, .st-btn--link, .space, .star__link) { color: var(--fg); }
 .stoico a.skip-link { color: var(--bg); }
 
 /* ---------- Reveal: fade + 16px rise, once. Only hidden when JS runs, so no-JS shows all. ---------- */
@@ -101,23 +101,85 @@ body { margin: 0; min-height: 100vh; }
   .nav__links { display: none; }
 }
 
-/* ---------- Hero (A02 Atmospheric) ---------- */
-.hero { position: relative; display: grid; align-items: end; min-height: calc(100svh - 64px); margin-top: -64px; padding-top: 64px; overflow: hidden; box-sizing: border-box; }
-.hero__field { position: absolute; inset: 0; transition: transform 600ms var(--ease-out); }
-.marble-field { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; color: var(--fg); opacity: 0.3; -webkit-mask-image: radial-gradient(ellipse 70% 80% at 72% 45%, #000 0%, transparent 78%); mask-image: radial-gradient(ellipse 70% 80% at 72% 45%, #000 0%, transparent 78%); }
-.hero__content { position: relative; z-index: 2; display: grid; gap: 40px; padding-top: var(--space-8); padding-bottom: var(--space-9); }
-.hero__title { max-width: 11ch; }
-.hero__quiet { color: var(--fg-muted); }
-.hero__foot { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-7); align-items: end; }
-.hero__lead { max-width: 40ch; }
-.hero__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
-@media (max-width: 860px) {
-  .hero__foot { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
-  .hero__actions { justify-content: flex-start; }
+/* ---------- 00 Star chart (A02 Atmospheric: ink ground, the MarbleField as a nebula) ----------
+   The sky fills the first screen under the nav. Stars sit at --x / --y percent of the sky;
+   the headline keeps the bottom left. Under 860px the headline comes first and the sky
+   follows as its own tall box. */
+.chart { position: relative; display: grid; align-items: end; min-height: calc(100svh - 64px); margin-top: -64px; padding-top: 64px; overflow: hidden; box-sizing: border-box; }
+.chart__intro { position: relative; z-index: 3; padding-top: var(--space-8); padding-bottom: var(--space-9); pointer-events: none; }
+.chart__copy { display: grid; gap: var(--space-5); justify-items: start; max-width: min(640px, 44vw); pointer-events: auto; }
+.chart__title { font-size: clamp(56px, 7.2vw, 112px); }
+.chart__lead { max-width: 36ch; }
+
+.chart__sky { position: absolute; inset: 64px 0 0; }
+.chart__field { position: absolute; inset: -16px; transition: transform 600ms var(--ease-out); }
+.marble-field { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; color: var(--fg); }
+.chart__nebula { opacity: 0.22; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 70% 42%, #000 0%, transparent 76%); mask-image: radial-gradient(ellipse 60% 70% at 70% 42%, #000 0%, transparent 76%); }
+.chart__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
+
+.chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; -webkit-mask-image: radial-gradient(ellipse 85% 85% at 60% 45%, #000 40%, transparent 100%); mask-image: radial-gradient(ellipse 85% 85% at 60% 45%, #000 40%, transparent 100%); }
+.chart__rule { stroke: var(--border); stroke-width: 1; }
+.chart__ecliptic { fill: none; stroke: var(--border-strong); stroke-width: 1; stroke-dasharray: 2 6; }
+.chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
+
+.chart__ticks, .chart__constellations, .chart__stars, .chart__legend { list-style: none; margin: 0; padding: 0; }
+.chart__ticks li { position: absolute; top: var(--space-3); left: calc(var(--x) * 1%); transform: translateX(-50%); font: 400 10px/1 var(--font-mono); letter-spacing: var(--tr-label); color: var(--fg-subtle); }
+.chart__constellations li { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); transform: translate(-50%, -50%); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
+
+/* A star: the glyph is centred on its point; the label hangs to one side. */
+.star { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; z-index: 2; }
+.star__link { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-control); color: var(--fg); }
+.star__glyph { position: relative; display: grid; place-items: center; transition: transform var(--dur-base) var(--ease-out); }
+.star__glyph::before { content: ""; position: absolute; inset: -9px; opacity: 0; transform: scale(1.35); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+  background:
+    linear-gradient(var(--fg), var(--fg)) top left / 6px 1px, linear-gradient(var(--fg), var(--fg)) top left / 1px 6px,
+    linear-gradient(var(--fg), var(--fg)) top right / 6px 1px, linear-gradient(var(--fg), var(--fg)) top right / 1px 6px,
+    linear-gradient(var(--fg), var(--fg)) bottom left / 6px 1px, linear-gradient(var(--fg), var(--fg)) bottom left / 1px 6px,
+    linear-gradient(var(--fg), var(--fg)) bottom right / 6px 1px, linear-gradient(var(--fg), var(--fg)) bottom right / 1px 6px;
+  background-repeat: no-repeat; }
+.star__link:hover .star__glyph::before, .star__link:focus-visible .star__glyph::before { opacity: 1; transform: none; }
+.star__link:hover .star__glyph, .star__link:focus-visible .star__glyph { transform: scale(1.15); }
+.star__label { position: absolute; top: 50%; left: calc(100% - 4px); transform: translateY(-50%); display: inline-flex; align-items: baseline; gap: var(--space-2); white-space: nowrap; pointer-events: none; }
+.star--left .star__label { left: auto; right: calc(100% - 4px); flex-direction: row-reverse; }
+.star__id { font: 400 11px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
+.star__name { font: 500 14px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
+.star__link:hover .star__name, .star__link:focus-visible .star__name { color: var(--fg); }
+
+/* Magnitude: live shines, in progress breathes, soon is barely there. Always with a word in the
+   legend, the readout and the catalog: shape and brightness, never colour alone. */
+.star .animation-mark, .screensaver .animation-mark { color: var(--fg); }
+.star--live .animation-mark { filter: drop-shadow(0 0 6px var(--selection)); }
+.star--wip .animation-mark { animation: star-breathe 3.2s var(--ease-in-out) infinite; }
+.star--soon .animation-mark { opacity: 0.5; }
+.star--soon .star__name { color: var(--fg-subtle); }
+@keyframes star-breathe { 50% { opacity: 0.45; } }
+
+.chart__foot { position: absolute; right: var(--gutter); bottom: var(--space-7); z-index: 3; display: grid; justify-items: end; gap: var(--space-3); pointer-events: none; }
+.chart__readout { margin: 0; min-height: 1.4em; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; text-align: right; }
+.chart__legend { display: flex; gap: var(--space-5); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
+.chart__legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.chart__legend .animation-mark { color: var(--fg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .star--wip .animation-mark { animation: none; opacity: 0.75; }
+  .star__glyph, .star__glyph::before { transition: none; }
 }
-@media (max-width: 520px) {
-  .hero__title { font-size: clamp(44px, 13.5vw, 72px); }
-  .hero__content { gap: var(--space-6); padding-bottom: var(--space-8); }
+@media (max-width: 860px) {
+  .chart { display: block; min-height: 0; }
+  .chart__intro { padding-bottom: var(--space-6); }
+  .chart__copy { max-width: none; }
+  .chart__sky { position: relative; inset: auto; height: clamp(440px, 125vw, 720px); }
+  .chart__ticks { display: none; }
+  /* The headline no longer sits on the sky here: spread the stars over the whole width. */
+  .star, .chart__constellations li { left: calc(((var(--x) - 30) * 1.3 + 5) * 1%); }
+  .chart__grid { transform-origin: 0 0; transform: translateX(-34%) scaleX(1.3); }
+  .chart__foot { left: var(--gutter); bottom: var(--space-5); justify-items: start; }
+  .chart__readout { text-align: left; }
+}
+@media (max-width: 600px) {
+  .star__name { display: none; }
+  .badges { max-width: 184px; margin-inline: auto; }
+  .chart__legend { gap: var(--space-4); }
 }
 
 /* ---------- Sections ---------- */
@@ -138,25 +200,54 @@ body { margin: 0; min-height: 100vh; }
 /* Hairline rows: tables and lists use row rules only. */
 .rows { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--border); }
 .rows > li { border-top: 1px solid var(--border); }
-.rows > li[hidden] { display: none; }
 
-.work { display: grid; grid-template-columns: 48px minmax(0, 1fr) 160px; gap: var(--space-6); padding-block: 36px; align-items: baseline; }
-.work__index { font: 400 12px/1 var(--font-mono); color: var(--fg-subtle); }
-.work__body { display: grid; gap: 10px; }
-.work__body .text { max-width: var(--measure-body); }
-.work__links { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-5); }
-.work__links .st-btn--link { gap: 4px; font-size: 14px; }
-.work__meta { display: grid; gap: var(--space-2); justify-items: end; text-align: right; font: 400 12px/1.6 var(--font-mono); color: var(--fg-subtle); }
-.work__meta .st-badge { margin-bottom: var(--space-1); }
-
-/* Pager under the list: previous · 1 / 2 · next. Revealed by stoico.ts. */
-.pager { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-top: var(--space-6); }
-.pager[hidden] { display: none; }
-.pager__status { font: 400 12px/1 var(--font-mono); color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
+/* Catalog rows: planet, the entry, then its metadata. A row is a link target from the chart. */
+.body { display: grid; grid-template-columns: 72px minmax(0, 1fr) 160px; gap: var(--space-6); padding-block: 36px; align-items: start; scroll-margin-top: 96px; }
+.planet { display: block; image-rendering: pixelated; color: var(--fg); }
+.body__planet .planet { width: 72px; height: 72px; }
+.body__main { display: grid; gap: 10px; }
+.body__main .text { max-width: var(--measure-body); }
+.body__id { font: 400 12px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
+.body:target .body__id { color: var(--fg); }
+.body__links { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-5); }
+.body__links li[hidden] { display: none; }
+.body__links .st-btn--link { gap: 4px; font-size: 14px; }
+.body__meta { display: grid; gap: var(--space-2); justify-items: end; text-align: right; font: 400 12px/1.6 var(--font-mono); color: var(--fg-subtle); }
+.body__meta .st-badge { margin-bottom: var(--space-1); }
 @media (max-width: 720px) {
-  .work { grid-template-columns: 32px minmax(0, 1fr); gap: var(--space-4); padding-block: var(--space-6); }
-  .work__meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); text-align: left; }
-  .work__meta .st-badge { margin: 0; }
+  .body { grid-template-columns: 48px minmax(0, 1fr); gap: var(--space-4); padding-block: var(--space-6); }
+  .body__planet .planet { width: 48px; height: 48px; }
+  .body__meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); text-align: left; }
+  .body__meta .st-badge { margin: 0; }
+}
+
+/* ---------- Cards: a body up close (<dialog>) ---------- */
+.ficha { width: min(1000px, calc(100vw - 32px)); max-width: none; max-height: calc(100svh - 32px); padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-surface); background: var(--surface); color: var(--fg); box-shadow: var(--shadow-3); overflow: auto; overscroll-behavior: contain; }
+.ficha::backdrop { background: rgba(7, 7, 7, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+[data-theme="light"] .ficha::backdrop { background: rgba(11, 11, 10, 0.28); }
+.ficha[open] { animation: ficha-in var(--dur-slow) var(--ease-out); }
+.ficha[open] .planet--large { animation: planet-in 900ms var(--ease-out); }
+@keyframes ficha-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+@keyframes planet-in { from { opacity: 0; transform: scale(0.06); } }
+.ficha__inner { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-7); padding: var(--space-8) var(--space-7) var(--space-5); }
+.ficha__planet { display: grid; justify-items: center; align-content: center; gap: var(--space-4); }
+.planet--large { width: min(100%, 360px); height: auto; aspect-ratio: 1; }
+.ficha__caption { margin: 0; font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
+.ficha__data { display: grid; gap: var(--space-4); align-content: start; justify-items: start; }
+.ficha__data .text { max-width: 44ch; }
+.ficha__facts { width: 100%; margin: var(--space-2) 0 0; border-bottom: 1px solid var(--border); }
+.ficha__facts div { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-4); padding-block: 10px; border-top: 1px solid var(--border); }
+.ficha__facts dt { font: 400 var(--text-label)/1.6 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
+.ficha__facts dd { margin: 0; font: 400 13px/1.5 var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
+.ficha__links { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.stoico .ficha__links a { text-decoration: none; color: var(--fg); }
+.ficha__nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.ficha__close { position: absolute; top: var(--space-4); right: var(--space-4); margin: 0; }
+@media (prefers-reduced-motion: reduce) { .ficha[open], .ficha[open] .planet--large { animation: none; } }
+@media (max-width: 760px) {
+  .ficha__inner { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-7) var(--space-5) var(--space-4); }
+  .planet--large { width: min(100%, 240px); }
+  .ficha__facts div { grid-template-columns: 112px minmax(0, 1fr); }
 }
 
 .space { display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; gap: var(--space-5); align-items: center; padding-block: var(--space-5); color: var(--fg); text-decoration: none; }
@@ -170,8 +261,25 @@ a.space:hover .space__arrow { color: var(--fg); transform: translate(2px, -2px);
   .space__arrow { grid-row: 1 / 3; grid-column: 2; }
 }
 
-/* ---------- Footer: the AsciiBanner, then the wordmark and one line ---------- */
+/* ---------- Footer: the AsciiBanner, the wordmark, one line, days in orbit, 88×31 buttons ---------- */
 .footer { position: relative; }
 .footer .ascii-banner { height: calc(22 * 14px); }
 .footer .ascii-banner__layer { font-size: 11px; line-height: 14px; }
 .footer__inner { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-5); padding-bottom: var(--space-8); text-align: center; }
+
+.footer__orbit { margin: 0; font: 400 var(--text-label)/1.6 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
+/* 88×31 buttons: a pixel star on an inverted cell, two lines of mono. */
+.badges { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.badge88 { display: flex; width: 88px; height: 31px; box-sizing: border-box; border: 1px solid var(--border-strong); color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
+.badge88__mark { flex: none; display: grid; place-items: center; width: 20px; background: var(--fg-subtle); color: var(--bg); }
+.badge88__text { display: flex; align-items: center; padding: 0 5px; font: 400 10px/12px var(--font-mono); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
+.stoico a.badge88 { color: var(--fg-muted); }
+.stoico a.badge88:hover { color: var(--fg); border-color: var(--fg-muted); }
+a.badge88:hover .badge88__mark { background: var(--fg); }
+
+/* ---------- Screensaver: fades in over everything after a minute idle ---------- */
+.screensaver { position: fixed; inset: 0; z-index: 100; background: var(--bg); color: var(--fg); opacity: 0; transition: opacity 600ms var(--ease-out); cursor: none; }
+.screensaver[hidden] { display: none; }
+.screensaver.is-on { opacity: 1; }
+.screensaver__field { position: absolute; inset: 0; width: 100%; height: 100%; }
+.screensaver__mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); animation: star-breathe 4s var(--ease-in-out) infinite; }

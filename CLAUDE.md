@@ -11,27 +11,28 @@ Landing page for **vstrofago** ("Projects, notes and other things."). Astro, ful
 ## How it's put together
 
 - `src/pages/index.astro` and `src/pages/es/index.astro` only pick a language and render `src/components/Landing.astro`.
-- Sections, in order: `Header` (sticky nav), `Hero`, `Work` (01, paged three at a time), `Elsewhere` (02), `Footer` (the AsciiBanner, then the wordmark and one line; no links, since the nav and Elsewhere already carry them). The browser tab title is just `vstrofago`.
+- Sections, in order: `Header` (sticky nav), `Chart` (00, the star chart, holds the `h1`), `Catalog` (01, every project as a hairline row with its planet), `Elsewhere` (02), then `Fichas` (one `<dialog>` card per project), `Footer` (the AsciiBanner, the wordmark, one line, days in orbit, 88×31 buttons) and `Screensaver`. The browser tab title is just `vstrofago`.
+- The chart: each project in `projects.ts` is a star at the position given in `src/data/sky.ts` (which also holds constellations and each planet's look; a project missing there gets a derived spot). Catalog numbers (`VS-001`…) come from the order in `projects.ts`. Stars are links to their catalog row, so without JS the chart is a table of contents.
 - Copy lives in `src/i18n/ui.ts`. Every key exists in both `en` and `es`; add new strings to both. Never hard-code visible text in a component.
-- Content lists live in `src/data/` (`projects.ts`, `spaces.ts`), with `{ en, es }` for anything translated. Octicon paths live in `src/data/icons.ts`.
+- Content lists live in `src/data/` (`projects.ts`, `sky.ts`, `spaces.ts`, `badges.ts`), with `{ en, es }` for anything translated. Octicon paths live in `src/data/icons.ts`.
 - Internal links go through `homeFor(lang)` / `withBase(path)` from `src/i18n/ui.ts`, because the site may be served from a sub-path (`BASE_PATH`). Never write a bare `/something` href.
-- There is no UI framework on the client. The only script is `src/scripts/stoico.ts`, loaded once from `src/layouts/Base.astro`, plus a tiny inline script in `<head>` that applies the stored theme before first paint. `stoico.ts` attaches behaviour to markup:
+- There is no UI framework on the client. Two scripts, loaded once from `src/layouts/Base.astro`: `src/scripts/stoico.ts` (the Stoico behaviours) and `src/scripts/cosmos.ts` (the chart's), plus a tiny inline script in `<head>` that applies the stored theme before first paint. They attach behaviour to markup:
   - `[data-theme-toggle]`: dark ⇄ light. Stored in `localStorage` under `stoico-theme`, the same key the blog uses (same origin), so the choice carries over. Every storage access is in `try/catch`; without storage it stays dark.
   - `[data-nav]`: glass + hairline only after scrolling.
   - `[data-reveal]`: fade + 16px rise, once. Hidden only when `html.js` is set, so no-JS shows everything.
-  - `[data-parallax]` / `[data-parallax-layer]`: the hero field follows the cursor by ≤14px.
-  - `[data-paginate="3"]` + `[data-pager]`: the Work list shows three rows per page; the pager is `hidden` in the markup and revealed by the script, so without JS every row shows.
-  - `canvas[data-marble]`: MarbleField. `[data-ascii-banner]`: AsciiBanner.
-  These are ports of the Stoico React components (`components/motion/*.jsx`); keep the algorithms, ramps and timings as they are. New effects must respect `prefers-reduced-motion` and pause offscreen, like the existing ones.
+  - `[data-parallax]` / `[data-parallax-layer]`: the chart's field follows the cursor by ≤14px.
+  - `canvas[data-marble]`: MarbleField (the nebula). `[data-ascii-banner]`: AsciiBanner.
+  - cosmos.ts: `canvas[data-starfield]` (faint fixed stars), `[data-sky]` (the RA/Dec readout), `canvas[data-planet]` (procedural 1-bit planets: live is a formed world, wip is part wireframe, soon is a dust disc), `dialog[data-ficha]` (cards, opened from `[data-star]` / `[data-ficha-open]` / `[data-ficha-go]`), `[data-screensaver]` (a starfield after 60s idle), `[data-orbit-day]`.
+  MarbleField and AsciiBanner are ports of the Stoico React components (`components/motion/*.jsx`); keep the algorithms, ramps and timings as they are. Planets reuse the MarbleField's Bayer matrix and tick at 80ms like the ASCII. New effects must respect `prefers-reduced-motion` and pause offscreen, like the existing ones.
 
 ## Design system: Stoico (follow it, don't improvise)
 
 The source of truth is the **Stoico** design system (the vstrofago design language, built in Claude Design). `src/styles/stoico/` mirrors its `tokens/` and `components/` folders verbatim, except `tokens/fonts.css`, which is replaced by the self-hosted `src/styles/fonts.css`. Don't edit them; if the system changes, copy them again. Page layout and the typography primitives go in `src/styles/site.css`, tokens only.
 
-**Philosophy.** One philosophy, four voices. This page speaks **Aura** ("Look at this.", marketing) in mode **A02 Atmospheric**: ink ground, a masked MarbleField behind the hero. Target: 90% calm, 10% surprise. Before shipping anything, run the design test: clarity, breathing, one priority, restraint (could something go?), one memorable moment, coherence, right voice, works without motion, colour or effects.
+**Philosophy.** One philosophy, four voices. This page speaks **Aura** in mode **A02 Atmospheric**, but as a place to explore rather than a pitch: no calls to action, a star chart instead of a hero. Ink ground, a masked MarbleField as the nebula. Y2K touches (screensaver, 88×31 buttons, days in orbit) stay quiet and monochrome. Target: 90% calm, 10% surprise. Before shipping anything, run the design test: clarity, breathing, one priority, restraint (could something go?), one memorable moment, coherence, right voice, works without motion, colour or effects.
 
 - **Themes.** Dark is the default (`--bg` #0B0B0A). Light is `[data-theme="light"]` on `<html>`. The ASCII footer is always ink (`data-theme="dark"` on the footer); `site.css` restates the dark aliases for that case.
-- **Colour.** Neutral first; it must work in monochrome. `--fg` / `--fg-muted` / `--fg-subtle` for text, `--border` (hairline) and `--border-strong` (controls). **No colour: the site is black and white.** Stoico's one accent (Ember) is mapped to `--fg` in `site.css` (`--accent`, `--accent-strong`, `--animation-accent`, `--selection`), so its moments (the hero's primary button, the ASCII bite) stay monochrome. Don't reintroduce Ember or signal colours. Semantic colours only with a word. In the light theme `--fg-subtle` is lifted to gray-700 in `site.css` so text stays at 4.5:1.
+- **Colour.** Neutral first; it must work in monochrome. `--fg` / `--fg-muted` / `--fg-subtle` for text, `--border` (hairline) and `--border-strong` (controls). **No colour: the site is black and white.** Stoico's one accent (Ember) is mapped to `--fg` in `site.css` (`--accent`, `--accent-strong`, `--animation-accent`, `--selection`), so its moments (the ASCII bite, the brightest stars) stay monochrome. Don't reintroduce Ember or signal colours. Semantic colours only with a word. In the light theme `--fg-subtle` is lifted to gray-700 in `site.css` so text stays at 4.5:1.
 - **Type, one job per face.**
   - Geist Pixel (`--font-pixel`): headlines, the hero Display, and every mention of **vstrofago** (always lowercase, via `Wordmark`). Never below ~28px except the wordmark.
   - Geist (`--font-sans`): everything general. Headings weight 500 with tight tracking; body 15/1.6.
