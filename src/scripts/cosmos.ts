@@ -460,10 +460,10 @@ function attachNebula(canvas: HTMLCanvasElement): void {
         const q1 = fbm(px + 5.2 - t * 0.3, py + 1.3 + t * 0.4, 3);
         const v = fbm(px + 3.2 * q0 + 1.7, py + 3.2 * q1 + 9.2, 4);
         // A texture, not a body: spread evenly, and capped so even the densest cloud stays a
-        // sparse dither (at most ~5 dots in 16), never a patch of light grey.
+        // sparse dither (at most ~3 dots in 16), never a patch of light grey.
         const cloud = Math.max(0, Math.min(1, (v - 0.36) / 0.4));
         const ridge = 1 - Math.abs(2 * fbm(px * 2.3 + q1 * 2 + 3.1, py * 2.3 - q0 * 2 + t * 0.5, 3) - 1);
-        const val = Math.min(0.3, breath * (0.22 * cloud + 0.16 * ridge ** 6 * cloud));
+        const val = Math.min(0.22, breath * (0.18 * cloud + 0.12 * ridge ** 6 * cloud));
         // Half Bayer, half fixed per-cell noise: at these low densities pure Bayer is a
         // regular lattice (a screen door); the mix keeps it grain.
         const thr = 0.5 * (BAYER4[y & 3][x & 3] + 0.5) / 16 + 0.5 * mhash(x, y + 97);
