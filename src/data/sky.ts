@@ -3,7 +3,9 @@ import { projects, type ProjectStatus, type Field } from './projects';
 // The star chart. Every project in projects.ts is a star; this file says where it sits, which
 // constellation it belongs to and what its planet looks like up close.
 // - `x` / `y`: position in the upper space (the stars' box under the welcome), 0–100 from its
-//   top left. The whole width is free: the bridge opens below it.
+//   top left. The whole width is free: the bridge opens below it. y maps to declination
+//   (+60° at 0, −60° at 100). Rule: no project below the −20° line, so y ≤ FLOOR_Y (66.6);
+//   placeOf clamps anything lower.
 // - `side`: which side of the star its name goes on.
 // - `planet`: the body drawn in its card. Omit it and one is derived from the id.
 // A project with no entry here still appears, near the centre of its field's constellation.
@@ -43,7 +45,7 @@ export const places: Record<string, Place> = {
   // Creavis
   'omarchy-brutalistoic': { x: 10, y: 22, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
   'hugo-theme-plano': { x: 24, y: 48, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 12, y: 76, side: 'right', planet: { kind: 'gas' } },
+  'music-for-work': { x: 12, y: 62, side: 'right', planet: { kind: 'gas' } },
 };
 
 /** The three fixed constellations, one per `field` in projects.ts, named in the Latin of star
@@ -69,6 +71,9 @@ export const constellations: Constellation[] = (Object.keys(fields) as Field[]).
  *  fraction of the page's width (at most `maxRadius` px); `tilt` flattens the rings. */
 export const bridge = { mouthA: 0.46, mouthB: 0.9, flare: 0.32, radius: 0.1, maxRadius: 150, tilt: 0.3 };
 
+/** The −20° line, as y in the upper space: no project sits below it. */
+export const FLOOR_Y = (80 / 120) * 100;
+
 /** Small deterministic hash of a string, 0–1. */
 function unit(id: string, salt = 0): number {
   let h = 2166136261 ^ salt;
@@ -80,7 +85,7 @@ export function placeOf(id: string): Required<Place> {
   const p = places[id];
   const c = fields[projects.find((q) => q.id === id)?.field ?? 'systemis'].center;
   const x = p?.x ?? Math.round(c.x + (unit(id, 1) - 0.5) * 20);
-  const y = p?.y ?? Math.round(c.y + (unit(id, 2) - 0.5) * 30);
+  const y = Math.min(FLOOR_Y, Math.max(4, p?.y ?? Math.round(c.y + (unit(id, 2) - 0.5) * 30)));
   return {
     x,
     y,

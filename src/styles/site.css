@@ -121,14 +121,14 @@ body { margin: 0; min-height: 100vh; }
    whole section; without JS a plain CSS grid stands in. Order down the page: the welcome,
    the readout and magnitudes, the upper space (the stars), the bridge's zone in the middle,
    the lower space (the outer spaces). */
-.cosmos { position: relative; overflow: hidden; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 12) calc(100vw / 12); }
-.cosmos.is-bridged { background-image: none; }
+.cosmos { position: relative; overflow: hidden; }
+/* Without JS a plain CSS grid stands in, from the upper space down (never behind the welcome). */
+.cosmos:not(.is-bridged) :is(.cosmos__upper, .cosmos__bridge, .cosmos__lower) { background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 12) calc(100vw / 12); }
 .cosmos__field { position: absolute; inset: -16px; transition: transform 600ms var(--ease-out); }
 .cosmos__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
 .cosmos__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .cosmos__warp path { fill: none; stroke-width: 1; }
 .cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-7); padding-bottom: var(--space-5); text-align: center; }
-.chart__head { display: grid; gap: var(--space-4); justify-items: center; }
 .chart__title { font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; letter-spacing: -0.01em; max-width: 26ch; }
 .chart__lead { max-width: 40ch; }
 /* Readout and magnitudes: at the top, under the welcome. */
@@ -176,6 +176,8 @@ body { margin: 0; min-height: 100vh; }
    while an outer space is pointed at. Ghost stars ride offset-paths into the lower space. */
 .w-grid { stroke: var(--border); }
 .w-edge { stroke: var(--border); }
+/* −20°: the floor of the upper space; no project sits below it. */
+.w-floor { stroke: var(--border-strong); stroke-dasharray: 4 6; }
 .w-ring { stroke: var(--border-strong); }
 .w-rim, .w-throat, .w-merid { stroke: var(--fg-subtle); }
 .w-throat--back { stroke: var(--border-strong); stroke-dasharray: 2 4; }
@@ -233,7 +235,7 @@ body { margin: 0; min-height: 100vh; }
   .cosmos { background-image: none; }
   .cosmos__field, .cosmos__warp, .cosmos__bar, .cosmos__upper, .cosmos__bridge, .cosmos__lower, .bridge__ghosts { display: none; }
   .cosmos__intro { padding-top: var(--space-8); padding-bottom: 0; }
-  .cosmos__intro .st-label, .chart__lead { display: none; }
+  .chart__lead { display: none; }
 }
 @media (min-width: 860px) {
   .js .hud-section { display: none; }

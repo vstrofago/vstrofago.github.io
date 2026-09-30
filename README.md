@@ -82,4 +82,4 @@ src/
   i18n/ · data/
 ```
 
-See `CLAUDE.md` for the design rules to follow when changing things.
+See `CLAUDE.md` for the design rules to follow when changing things, and `docs/assets.md` for how every drawn asset (stars, planets and cards, ships, the bridge) is made and how to add new ones.

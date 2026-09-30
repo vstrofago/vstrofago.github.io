@@ -496,13 +496,17 @@ function initBridge(): void {
       add(cls, near);
     };
 
-    // Horizontal lines: the upper plane down to the zone, the lower plane from the flare on.
-    for (let y = cell; y < a0 - 4; y += cell) add('w-grid', [{ x: 0, y }, { x: W, y }]);
+    // The grid starts under all the information (welcome, readout, hour marks): its first row
+    // is the top of the upper space. Rows there are 20° of declination apart (+60° at the top),
+    // so the −20° line, the lowest a project may sit on, is a real line.
+    const uTop = top(upper), uH = upper.offsetHeight, row = uH / 6;
+    const decAt = (y: number): number => Math.round(60 - ((y - uTop) / uH) * 120);
+    for (let y = uTop; y < a0 - 4; y += row) add(decAt(y) === -20 ? 'w-grid w-floor' : 'w-grid', [{ x: 0, y }, { x: W, y }]);
     for (let y = aF + cell * 0.5; y < S; y += cell) add('w-grid', [{ x: 0, y }, { x: W, y }]);
     // Vertical lines: straight, converging into mouth A; out of mouth B, flaring, then straight.
     for (let i = 0; i <= 12; i++) {
       const f = (i / 12) * 2 - 1;
-      const down: Pt[] = [{ x: cx + f * R0, y: 0 }];
+      const down: Pt[] = [{ x: cx + f * R0, y: uTop }];
       const aEnd = aA - Rm * k * Math.sqrt(Math.max(0, 1 - f * f));
       for (let a = a0; a <= aEnd; a += 4) down.push({ x: cx + f * rIn(a), y: a });
       down.push({ x: cx + f * rIn(aEnd), y: aEnd });
@@ -526,13 +530,12 @@ function initBridge(): void {
       add(Math.sin(th) >= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
     }
 
-    // Coordinates: hours along the top, declinations down the left of the upper space.
+    // Coordinates, above and beside the grid, never inside it: hours just over the first row,
+    // declinations on each row of the upper space, by the left edge.
     const labels: string[] = [];
-    for (let i = 1; i < 12; i++) labels.push(`<text class="w-label" x="${r1(i * cell)}" y="18" text-anchor="middle">${String(i * 2).padStart(2, '0')}h</text>`);
-    const uTop = top(upper), uH = upper.offsetHeight;
-    for (let y = cell; y < a0 - 4; y += cell) {
-      const dec = Math.round(60 - ((y - uTop) / uH) * 120);
-      if (y < uTop - 8 || dec < -90 || dec > 90) continue;
+    for (let i = 1; i < 12; i++) labels.push(`<text class="w-label" x="${r1(i * cell)}" y="${r1(uTop - 10)}" text-anchor="middle">${String(i * 2).padStart(2, '0')}h</text>`);
+    for (let y = uTop + row; y < a0 - 4; y += row) {
+      const dec = decAt(y);
       labels.push(`<text class="w-label" x="8" y="${r1(y - 6)}">${dec > 0 ? '+' : dec < 0 ? '−' : ''}${Math.abs(dec)}°</text>`);
     }
 

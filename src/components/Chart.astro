@@ -9,7 +9,6 @@
 // the straight grid, each flying its pixel ship.
 // Stars open their card (Fichas.astro); without JS they link to the Registro rows.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
-import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import Icon from './ds/Icon.astro';
 import Ship from './ds/Ship.astro';
@@ -41,10 +40,7 @@ const outer = spaces.filter((s) => s.url);
   <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
 
   <div class="cosmos__intro container" data-reveal>
-    <div class="chart__head">
-      <Label>{t('chart.label')}</Label>
-      <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
-    </div>
+    <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
     <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
   </div>
 
