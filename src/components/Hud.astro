@@ -1,0 +1,136 @@
+---
+// 01 On-board log: the sky's plain-text twin, as a ship's HUD. One frame with corner
+// brackets, two tabs (the bodies and the exits), a mono readout of the record count, and an
+// end-of-record caret. No headline, no pitch: just the records.
+// Without JS both panels show, one after the other, and the tab strip stays hidden;
+// cosmos.ts reveals the tabs, shows one panel at a time (arrow keys move between tabs) and
+// follows #vs-… / #hud-exits in the URL. Under 720px table rows stack.
+import Label from './ds/Label.astro';
+import Badge from './ds/Badge.astro';
+import Icon from './ds/Icon.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder, type ProjectStatus } from '../data/projects';
+import { spaces } from '../data/spaces';
+import { catalogId, constellationOf } from '../data/sky';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const linkLabel = { demo: t('catalog.demo'), github: t('catalog.github'), more: t('catalog.more') };
+const status: Record<ProjectStatus, { label: string; dot?: boolean; outline?: boolean }> = {
+  live: { label: t('status.live'), dot: true },
+  wip: { label: t('status.wip') },
+  soon: { label: t('status.soon'), outline: true },
+};
+const two = (n: number) => String(n).padStart(2, '0');
+const channel = (i: number) => `CH ${two(i + 1)}`;
+const tabs = [
+  { id: 'hud-bodies', label: t('tab.bodies'), count: projects.length },
+  { id: 'hud-exits', label: t('tab.exits'), count: spaces.length },
+];
+---
+<section id="hud" class="section hud-section" aria-labelledby="hud-title">
+  <div class="container">
+    <Label index="01" as="h2" id="hud-title" class="hud__title">{t('hud.label')}</Label>
+    <div class="hud" data-hud>
+      <div class="hud__bar">
+        <div class="hud__tabs" role="tablist" aria-label={t('hud.tabs')} data-hud-tabs hidden>
+          {tabs.map((tab, i) => (
+            <button
+              class="hud__tab"
+              type="button"
+              role="tab"
+              id={`${tab.id}-tab`}
+              aria-controls={tab.id}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              <span>{tab.label}</span><span class="hud__count">{two(tab.count)}</span>
+            </button>
+          ))}
+        </div>
+        <span class="hud__readout" aria-hidden="true" data-orbit-day={'2026-09-23'} data-label="T+"></span>
+      </div>
+
+      <div class="hud__panel" id="hud-bodies" role="tabpanel" aria-labelledby="hud-bodies-tab" data-hud-panel>
+        <p class="hud__caption" data-hud-caption>{t('tab.bodies')} · {two(projects.length)} {t('term.records')}</p>
+        <table class="term__table term__table--catalog">
+          <thead>
+            <tr>
+              <th scope="col">{t('table.id')}</th>
+              <th scope="col">{t('table.body')}</th>
+              <th scope="col">{t('table.class')}</th>
+              <th scope="col">{t('table.status')}</th>
+              <th scope="col">{t('table.links')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p, i) => {
+              const id = catalogId(i);
+              const constellation = constellationOf(p.id);
+              return (
+                <tr id={id.toLowerCase()}>
+                  <td class="term__id">{id}</td>
+                  <th scope="row" class="term__body">
+                    <span class="term__name">{(p.title ?? placeholder.title)[lang]}</span>
+                    <span class="term__desc">{(p.description ?? placeholder.description)[lang]}</span>
+                  </th>
+                  <td class="term__class">
+                    <span>{p.category[lang]}</span>
+                    <span class="term__sub">{p.tags ?? placeholder.tags[lang]}{constellation && ` · ${constellation}`}</span>
+                  </td>
+                  <td class="term__status">
+                    <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
+                  </td>
+                  <td class="term__links">
+                    <ul>
+                      <li hidden data-closer>
+                        <button class="st-btn st-btn--link" type="button" data-ficha-open={id.toLowerCase()}>
+                          {t('catalog.closer')}<Icon name="search" size={12} />
+                        </button>
+                      </li>
+                      {p.links.map((l) => (
+                        <li><a class="st-btn st-btn--link" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={12} /></a></li>
+                      ))}
+                    </ul>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hud__panel" id="hud-exits" role="tabpanel" aria-labelledby="hud-exits-tab" data-hud-panel>
+        <p class="hud__caption" data-hud-caption>{t('tab.exits')} · {two(spaces.length)} {t('term.records')}</p>
+        <table class="term__table term__table--channels">
+          <thead>
+            <tr>
+              <th scope="col">{t('table.channel')}</th>
+              <th scope="col">{t('table.dest')}</th>
+              <th scope="col">{t('table.address')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spaces.map((s, i) => (
+              <tr>
+                <td class="term__id">{channel(i)}</td>
+                <th scope="row" class="term__body"><span class="term__name">{s.name[lang]}</span></th>
+                <td class="term__address">
+                  {s.url ? (
+                    <a class="term__go" href={s.url} rel="noopener">{s.handle}<Icon name="arrow-up-right" size={12} /></a>
+                  ) : (
+                    <span>{s.handle}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="term__end" aria-hidden="true">&gt; {t('term.end')}<span class="term__caret">_</span></p>
+    </div>
+  </div>
+</section>

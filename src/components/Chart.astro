@@ -89,7 +89,6 @@ const exits = spaces.filter((s) => s.url).map((s, i, all) => {
 
     <div class="hole" style={`--x:${hole.x};--y:${hole.y}`}>
       <canvas class="hole__canvas" data-hole data-block-size="2" aria-hidden="true"></canvas>
-      <span class="hole__name" aria-hidden="true">{t('hole.name')}</span>
       <ul class="hole__exits" aria-label={t('hole.links')}>
         {exits.map(({ s, x, y, side }) => (
           <li class={`hole__exit hole__exit--${side}`} style={`--ex:${x};--ey:${y}`}>

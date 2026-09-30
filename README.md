@@ -2,7 +2,7 @@
 
 **Projects, notes and other things.** The landing for vstrofago: a portfolio of experiments across code, writing, philosophy on video, productivity systems and music.
 
-Static site built with [Astro](https://astro.build), styled with **Stoico**, the vstrofago design language (Aura voice, dark by default with a light theme), bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. The landing is a star chart: every project is a star, and each opens a card with its own procedural planet; the links orbit a black hole. Below the sky, two plain data tables list the same projects and links. It ships no framework to the browser: two small scripts run the theme toggle, reveals, the nebula, the chart, the planets, the black hole, the cards, a screensaver and the ASCII banner footer.
+Static site built with [Astro](https://astro.build), styled with **Stoico**, the vstrofago design language (Aura voice, dark by default with a light theme), bilingual (English at `/`, Spanish at `/es/`), deployed to GitHub Pages. The landing is a star chart: every project is a star, and each opens a card with its own procedural planet; the links orbit a black hole. Below the sky, an on-board HUD lists the same projects and links in two tabs. It ships no framework to the browser: two small scripts run the theme toggle, reveals, the nebula, the chart, the planets, the black hole, the cards, a screensaver and the ASCII banner footer.
 
 ## Run it
 
@@ -62,7 +62,7 @@ To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.git
 | Projects (stars, catalog rows and cards) | `src/data/projects.ts` |
 | Where each star sits, constellations, planet looks, the black hole | `src/data/sky.ts` |
 | The footer's 88×31 buttons | `src/data/badges.ts` |
-| Links (the black hole's exits and the channels table) | `src/data/spaces.ts` |
+| Links (the black hole's exits and the HUD's exits tab) | `src/data/spaces.ts` |
 
 Projects show bracketed placeholders until you give them a `title` and `description`. Each row lists its `links` as quiet text links: `github` ("Source"), `demo`, or `more` for anywhere else with details.
 
@@ -72,7 +72,7 @@ Projects show bracketed placeholders until you give them a `title` and `descript
 src/
   pages/            index.astro (en) · es/index.astro (es)
   layouts/Base.astro  <head>, SEO, hreflang, fonts, theme-before-paint, the one client script
-  components/       Header, Chart, Catalog, Fichas, Elsewhere, Footer, Screensaver
+  components/       Header, Chart, Hud, Fichas, Footer, Screensaver
     ds/             Stoico components as Astro markup: Button, Badge, Label, Icon, Mark, Wordmark
   scripts/          stoico.ts: theme, nav, reveal, parallax, MarbleField, AsciiBanner
                     cosmos.ts: starfield, nebula, readout, planets, black hole, cards, screensaver, days in orbit

@@ -1,13 +1,14 @@
 // The star chart's behaviours, on top of stoico.ts (same rules: plain DOM, monochrome, every
 // effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
 //
-//   [data-starfield]      faint deterministic stars behind the chart, a few of them twinkling
+//   [data-starfield]      faint fixed stars behind the chart; something unseen eats a few
 //   canvas[data-nebula]   the chart's nebula: warped clouds and filaments, very slow
 //   canvas[data-hole]     the black hole the links orbit (accretion disc, lensed far side)
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
+//   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash, fbm } from './stoico';
@@ -25,22 +26,65 @@ function strHash(s: string): number {
 /* ---------------------------------------------------------------------------------------------
    Starfield: one CSS pixel per canvas pixel, positions from a hash so every visit sees the same
    sky. About one star per 2,600px²; one in twelve twinkles.
+   And something invisible feeds on it: the vstrofago, a star-eater, drifts across the sky on
+   a slow, looping path. A star it reaches flares, breaks into crumbs that fall toward a point
+   nobody can see, and goes out; half a minute or so later it quietly lights again. It is the
+   AsciiBanner's bite, told with stars. Stills (and stops eating) under reduced motion.
    --------------------------------------------------------------------------------------------- */
+interface Star { x: number; y: number; s: number; a: number; tw: boolean; eaten: number; back: number }
+
 function attachStarfield(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  let stars: { x: number; y: number; s: number; a: number; tw: boolean }[] = [];
+  let stars: Star[] = [];
   let rgb: [number, number, number] = [237, 237, 234];
   let visible = true, frame = 0;
+  const BITE = 24; // px
+  const eater = { x: -99, y: -99 };
 
+  const fill = (x: number, y: number, size: number, alpha: number): void => {
+    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${Math.max(0, Math.min(1, alpha)).toFixed(3)})`;
+    ctx.fillRect(Math.round(x), Math.round(y), size, size);
+  };
+  const move = (): void => {
+    const W = canvas.width, H = canvas.height, f = frame;
+    eater.x = W * (0.5 + 0.46 * Math.sin(f * 0.0061) * Math.cos(f * 0.0017 + 0.4));
+    eater.y = H * (0.5 + 0.42 * Math.sin(f * 0.0047 + 1.3));
+  };
   const draw = (): void => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let i = 0; i < stars.length; i++) {
       const st = stars[i];
+      if (st.eaten >= 0) {
+        const age = frame - st.eaten;
+        if (age < 3) {
+          fill(st.x - 1, st.y - 1, st.s + 2, 1); // the flare
+        } else if (age < 10) {
+          const k = (age - 3) / 7; // crumbs fall toward the eater and fade
+          for (let c = 0; c < 3; c++) {
+            const jx = (mhash(i, c + 11) - 0.5) * 8 * (1 - k), jy = (mhash(i, c + 17) - 0.5) * 8 * (1 - k);
+            fill(st.x + (eater.x - st.x) * k + jx, st.y + (eater.y - st.y) * k + jy, 1, 0.9 * (1 - k));
+          }
+        } else if (frame >= st.back) {
+          st.eaten = -1; // relit; fades in below
+        }
+        if (st.eaten >= 0) continue;
+      }
       let a = st.a;
       if (st.tw) a *= 0.35 + 0.65 * Math.abs(Math.sin(frame * 0.09 + i));
-      ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
-      ctx.fillRect(st.x, st.y, st.s, st.s);
+      const since = frame - st.back;
+      if (since >= 0 && since < 25) a *= since / 25;
+      fill(st.x, st.y, st.s, a);
+    }
+  };
+  const eat = (): void => {
+    for (const st of stars) {
+      if (st.eaten >= 0 || frame - st.back < 25) continue;
+      const dx = st.x - eater.x, dy = st.y - eater.y;
+      if (dx * dx + dy * dy < BITE * BITE) {
+        st.eaten = frame;
+        st.back = frame + 220 + Math.floor(mhash(st.x, st.y + frame) * 260);
+      }
     }
   };
   const size = (): void => {
@@ -56,9 +100,12 @@ function attachStarfield(canvas: HTMLCanvasElement): void {
         s: h > 0.93 ? 2 : 1,
         a: 0.18 + mhash(i, 3) * 0.5,
         tw: h > 0.92,
+        eaten: -1,
+        back: -999,
       };
     });
     rgb = toRGB(canvas.parentElement ?? document.body, getComputedStyle(canvas).color);
+    move();
     draw();
   };
 
@@ -69,6 +116,8 @@ function attachStarfield(canvas: HTMLCanvasElement): void {
   window.setInterval(() => {
     if (reduced() || !visible || document.hidden) return;
     frame++;
+    move();
+    eat();
     draw();
   }, TICK * 1.5);
 }
@@ -380,16 +429,16 @@ function initOrbitDay(): void {
     const start = Date.parse(`${el.dataset.orbitDay}T00:00:00`);
     if (Number.isNaN(start)) return;
     const day = Math.max(1, Math.floor((Date.now() - start) / 86_400_000) + 1);
-    el.textContent = ` · ${el.dataset.label ?? ''} ${String(day).padStart(4, '0')}`;
+    const n = String(day).padStart(4, '0');
+    el.textContent = el.dataset.label === 'T+' ? `T+${n}` : ` · ${el.dataset.label ?? ''} ${n}`;
   });
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Nebula: slow clouds, not marble. Three layers of the system's fbm: one warps another (the
-   billow), a ridged pass draws thin filaments where the cloud is dense, and a soft,
-   noise-edged envelope keeps it a body in the sky rather than a texture. Time moves at a
-   fraction of the MarbleField's pace, and the whole thing breathes over about a minute.
-   Thresholded against the same Bayer matrix; kept very faint in site.css.
+   Nebula: a slow, faint texture behind the sky. Three layers of the system's fbm, one warping
+   another (the billow), with a ridged pass for thin filaments. Spread evenly and capped to a
+   sparse dither, so it reads as grain that drifts, never as a grey shape. Time moves at a
+   fraction of the MarbleField's pace and the whole field breathes over about a minute.
    --------------------------------------------------------------------------------------------- */
 function attachNebula(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext('2d');
@@ -402,25 +451,23 @@ function attachNebula(canvas: HTMLCanvasElement): void {
   const draw = (): void => {
     if (!img) return;
     const d = img.data, s = 0.009 * (block / 5) * (360 / Math.max(240, w)) * 1.4;
-    const breath = 0.9 + 0.1 * Math.sin(t * 0.9);
+    const breath = 0.85 + 0.15 * Math.sin(t * 0.9);
     for (let y = 0; y < h; y++) {
-      const py = y * s, ey = (y / h - 0.42) / 0.55;
+      const py = y * s;
       for (let x = 0; x < w; x++) {
         const px = x * s;
         const q0 = fbm(px + t * 0.6, py - t * 0.25, 3);
         const q1 = fbm(px + 5.2 - t * 0.3, py + 1.3 + t * 0.4, 3);
         const v = fbm(px + 3.2 * q0 + 1.7, py + 3.2 * q1 + 9.2, 4);
-        const ex = (x / w - 0.64) / 0.44;
-        const env = Math.max(0, Math.min(1, 1.3 - Math.sqrt(ex * ex + ey * ey) * (0.8 + 0.6 * q0)));
-        let val = 0;
-        if (env > 0) {
-          const cloud = Math.max(0, Math.min(1, (v - 0.4) / 0.34));
-          const ridge = 1 - Math.abs(2 * fbm(px * 2.3 + q1 * 2 + 3.1, py * 2.3 - q0 * 2 + t * 0.5, 3) - 1);
-          const fil = ridge ** 6;
-          // Mostly midtones: dense cloud stays a dither, never a solid block.
-          val = Math.min(0.78, env * breath * (0.55 * cloud * Math.sqrt(cloud) + 0.55 * fil * Math.sqrt(cloud)));
-        }
-        const on = val > (BAYER4[y & 3][x & 3] + 0.5) / 16, i = (y * w + x) * 4;
+        // A texture, not a body: spread evenly, and capped so even the densest cloud stays a
+        // sparse dither (at most ~5 dots in 16), never a patch of light grey.
+        const cloud = Math.max(0, Math.min(1, (v - 0.36) / 0.4));
+        const ridge = 1 - Math.abs(2 * fbm(px * 2.3 + q1 * 2 + 3.1, py * 2.3 - q0 * 2 + t * 0.5, 3) - 1);
+        const val = Math.min(0.3, breath * (0.22 * cloud + 0.16 * ridge ** 6 * cloud));
+        // Half Bayer, half fixed per-cell noise: at these low densities pure Bayer is a
+        // regular lattice (a screen door); the mix keeps it grain.
+        const thr = 0.5 * (BAYER4[y & 3][x & 3] + 0.5) / 16 + 0.5 * mhash(x, y + 97);
+        const on = val > thr, i = (y * w + x) * 4;
         d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = on ? 255 : 0;
       }
     }
@@ -568,6 +615,54 @@ function attachHole(canvas: HTMLCanvasElement): void {
   run();
 }
 
+/* ---------------------------------------------------------------------------------------------
+   HUD tabs (WAI-ARIA tabs): one panel at a time, arrow keys / Home / End move between tabs.
+   A hash that points into a panel (#vs-003, #hud-exits) opens that panel. Without JS the
+   tab strip stays hidden and both panels show.
+   --------------------------------------------------------------------------------------------- */
+function initHud(): void {
+  const hud = document.querySelector<HTMLElement>('[data-hud]');
+  const list = hud?.querySelector<HTMLElement>('[data-hud-tabs]');
+  if (!hud || !list) return;
+  const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+  const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls') ?? ''));
+  const select = (i: number, focus = false): void => {
+    tabs.forEach((tab, k) => {
+      const on = k === i;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      if (panels[k]) panels[k]!.hidden = !on;
+    });
+    if (focus) tabs[i].focus();
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(i));
+    tab.addEventListener('keydown', (e) => {
+      const last = tabs.length - 1;
+      const to = e.key === 'ArrowRight' ? (i + 1) % tabs.length
+        : e.key === 'ArrowLeft' ? (i - 1 + tabs.length) % tabs.length
+        : e.key === 'Home' ? 0 : e.key === 'End' ? last : -1;
+      if (to < 0) return;
+      e.preventDefault();
+      select(to, true);
+    });
+  });
+  const follow = (): void => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    const target = document.getElementById(id);
+    const k = panels.findIndex((p) => p && target && (p === target || p.contains(target)));
+    if (k < 0) return;
+    select(k);
+    target?.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+  };
+  hud.querySelectorAll<HTMLElement>('[data-hud-caption]').forEach((c) => { c.hidden = true; });
+  list.hidden = false;
+  select(0);
+  follow();
+  window.addEventListener('hashchange', follow);
+}
+
 export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
@@ -575,6 +670,7 @@ export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-nebula]').forEach(attachNebula);
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-hole]').forEach(attachHole);
   initReadout();
+  initHud();
   initFichas(planets);
   initScreensaver();
   initOrbitDay();
