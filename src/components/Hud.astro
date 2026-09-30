@@ -1,0 +1,124 @@
+---
+// 01 Log ("Registro"): the sky's plain-text twin, as a ship's HUD. One frame with corner
+// brackets, two tabs (stars: the projects; anomalies: the links), a mono readout of the record count, and an
+// end-of-record caret. No headline, no pitch: just the records.
+// A vstro's row opens its card (the links live there); without JS its name links to the
+// project's first link instead.
+// Without JS both panels show, one after the other, and the tab strip stays hidden;
+// cosmos.ts reveals the tabs, shows one panel at a time (arrow keys move between tabs) and
+// follows #vs-… / #hud-exits in the URL. Under 720px table rows stack.
+import Label from './ds/Label.astro';
+import Badge from './ds/Badge.astro';
+import Icon from './ds/Icon.astro';
+import { useTranslations, type Lang } from '../i18n/ui';
+import { projects, placeholder, type ProjectStatus } from '../data/projects';
+import { spaces } from '../data/spaces';
+import { fields } from '../data/sky';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const status: Record<ProjectStatus, { label: string; dot?: boolean; outline?: boolean }> = {
+  live: { label: t('status.live'), dot: true },
+  wip: { label: t('status.wip') },
+  soon: { label: t('status.soon'), outline: true },
+};
+const two = (n: number) => String(n).padStart(2, '0');
+const channel = (i: number) => `CH ${two(i + 1)}`;
+const tabs = [
+  { id: 'hud-bodies', label: t('tab.bodies'), count: projects.length },
+  { id: 'hud-exits', label: t('tab.exits'), count: spaces.length },
+];
+---
+<section id="hud" class="section hud-section" aria-labelledby="hud-title">
+  <div class="container">
+    <Label as="h2" id="hud-title" class="hud__title">{t('hud.label')}</Label>
+    <div class="hud" data-hud>
+      <div class="hud__bar">
+        <div class="hud__tabs" role="tablist" aria-label={t('hud.tabs')} data-hud-tabs hidden>
+          {tabs.map((tab, i) => (
+            <button
+              class="hud__tab"
+              type="button"
+              role="tab"
+              id={`${tab.id}-tab`}
+              aria-controls={tab.id}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              <span>{tab.label}</span><span class="hud__count">{two(tab.count)}</span>
+            </button>
+          ))}
+        </div>
+        <span class="hud__readout" aria-hidden="true" data-orbit-day={'2026-09-23'} data-label="T+"></span>
+      </div>
+
+      <div class="hud__panel" id="hud-bodies" role="tabpanel" aria-labelledby="hud-bodies-tab" data-hud-panel>
+        <p class="hud__caption" data-hud-caption>{t('tab.bodies')} · {two(projects.length)} {t('term.records')}</p>
+        <table class="term__table term__table--catalog">
+          <thead>
+            <tr>
+              <th scope="col">{t('table.id')}</th>
+              <th scope="col">{t('table.body')}</th>
+              <th scope="col">{t('table.class')}</th>
+              <th scope="col">{t('table.status')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p) => {
+              const id = p.catalog;
+              const constellation = fields[p.field].name;
+              return (
+                <tr id={id.toLowerCase()} class="term__row" data-row-open>
+                  <td class="term__id">{id}</td>
+                  <th scope="row" class="term__body">
+                    <a class="term__name term__open" href={p.links[0]?.href ?? `#${id.toLowerCase()}`} rel="noopener" data-ficha-open={id.toLowerCase()}>{(p.title ?? placeholder.title)[lang]}</a>
+                    <span class="term__desc">{(p.description ?? placeholder.description)[lang]}</span>
+                  </th>
+                  <td class="term__class">
+                    <span>{p.category[lang]}</span>
+                    <span class="term__sub">{p.tags ?? placeholder.tags[lang]} · {constellation}</span>
+                  </td>
+                  <td class="term__status">
+                    <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hud__panel" id="hud-exits" role="tabpanel" aria-labelledby="hud-exits-tab" data-hud-panel>
+        <p class="hud__caption" data-hud-caption>{t('tab.exits')} · {two(spaces.length)} {t('term.records')}</p>
+        <table class="term__table term__table--channels">
+          <thead>
+            <tr>
+              <th scope="col">{t('table.channel')}</th>
+              <th scope="col">{t('table.dest')}</th>
+              <th scope="col">{t('table.address')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spaces.map((s, i) => (
+              <tr>
+                <td class="term__id">{channel(i)}</td>
+                <th scope="row" class="term__body"><span class="term__name">{s.name[lang]}</span></th>
+                <td class="term__address">
+                  {s.url ? (
+                    <a class="term__go" href={s.url} rel="noopener">{s.handle}<Icon name="arrow-up-right" size={12} /></a>
+                  ) : (
+                    <span>{s.handle}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="term__end" aria-hidden="true">&gt; {t('term.end')}<span class="term__caret">_</span></p>
+    </div>
+  </div>
+</section>

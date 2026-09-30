@@ -26,6 +26,7 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v5
       - run: npm ci
+      - run: npm run check
       # "/" for <user>.github.io, "/<repo>" for any other repo name (see astro.config.mjs).
       - run: npm run build
         env:

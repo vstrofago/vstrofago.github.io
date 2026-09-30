@@ -1,0 +1,57 @@
+---
+// An ASCIIGen export played in the browser (public/ascii/<name>/<quality>/frame_00001.txt …).
+// At build time this reads the quality's meta.json and inlines frame 1, so the first frame is
+// there on first paint and without JS. src/scripts/ascii.ts then lazy-loads the other frames
+// (bounded concurrency, cached), plays them by elapsed time at meta.fps (or `fps`), pauses
+// offscreen and in hidden tabs, keeps frame 1 still under reduced motion, and scales the
+// <pre> to its box without changing the character grid.
+// Only monochrome (utf8) exports are supported; that is what the design system's ASCII uses.
+// Decorative by default (aria-hidden); pass `label` to announce it instead.
+import fs from 'node:fs';
+import path from 'node:path';
+import { withBase } from '../i18n/ui';
+
+interface Props {
+  name: string;
+  /** Preferred quality; falls back medium → low → high → the animation's root. */
+  quality?: 'medium' | 'low' | 'high';
+  /** Playback speed. Defaults to meta.fps; worth setting when meta.fpsSource is "default". */
+  fps?: number;
+  label?: string;
+  /** Shown if the frames can't be loaded. */
+  errorText: string;
+  class?: string;
+}
+const { name, quality = 'medium', fps, label, errorText, class: cls } = Astro.props;
+
+const root = path.join(process.cwd(), 'public', 'ascii', name);
+const order = [quality, ...['medium', 'low', 'high'].filter((q) => q !== quality), ''];
+const folder = order.find((q) => fs.existsSync(path.join(root, q, 'frame_00001.txt'))) ?? '';
+const metaPath = path.join(root, folder, 'meta.json');
+const meta = fs.existsSync(metaPath) ? JSON.parse(fs.readFileSync(metaPath, 'utf8')) : {};
+if (meta.frameEncoding && meta.frameEncoding !== 'utf8') {
+  throw new Error(`AsciiAnimation: ${name}/${folder} is ${meta.frameEncoding}; only utf8 (monochrome) exports are supported.`);
+}
+const first = fs.readFileSync(path.join(root, folder, 'frame_00001.txt'), 'utf8');
+const lines = first.split('\n');
+const cols = meta.width ?? Math.max(...lines.map((l) => l.length));
+const rows = meta.height ?? lines.length;
+// Browser URL: the site base + encoded path segments, ending in a slash.
+const src = withBase([ 'ascii', name, folder ].filter(Boolean).map(encodeURIComponent).join('/') + '/');
+---
+<div
+  class:list={['ascii-anim', cls]}
+  data-ascii-anim
+  data-src={src}
+  data-cols={cols}
+  data-rows={rows}
+  data-frames={meta.frameCount ?? 1}
+  data-fps={fps ?? meta.fps ?? 20}
+  style={`--cols:${cols};--rows:${rows}`}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <pre class="ascii-anim__pre">{first}</pre>
+  <span class="ascii-anim__error" hidden>{errorText}</span>
+</div>

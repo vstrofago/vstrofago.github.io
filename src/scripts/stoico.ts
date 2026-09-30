@@ -7,29 +7,28 @@
 //   [data-theme-toggle]   dark ⇄ light, remembered in localStorage (shared with the blog)
 //   [data-nav]            glass + hairline once the page has scrolled
 //   [data-reveal]         fade + 16px rise, once, when it enters the viewport
-//   [data-parallax]       the hero field follows the cursor by ≤14px
+//   [data-parallax]       the chart's field follows the cursor by ≤14px
 //   canvas[data-marble]   MarbleField: slowly swirling dithered marble
-//   [data-paginate]       a list shown N rows at a time, with its [data-pager] after it
 //   [data-ascii-banner]   AsciiBanner: the ASCII star, eaten and reformed
 
 const THEME_KEY = 'stoico-theme';
 
-const reducedQuery = (): MediaQueryList | null => {
+export const reducedQuery = (): MediaQueryList | null => {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)');
   } catch {
     return null;
   }
 };
-const reduced = (): boolean => reducedQuery()?.matches ?? false;
+export const reduced = (): boolean => reducedQuery()?.matches ?? false;
 
-function watchVisibility(el: Element, onChange: (visible: boolean) => void): void {
+export function watchVisibility(el: Element, onChange: (visible: boolean) => void): void {
   if (typeof IntersectionObserver === 'undefined') return;
   new IntersectionObserver((entries) => onChange(entries[entries.length - 1].isIntersecting)).observe(el);
 }
 
 /** Resolves any CSS colour (including var(--…)) to RGB in the context of `el`. */
-function toRGB(el: Element, color: string): [number, number, number] {
+export function toRGB(el: Element, color: string): [number, number, number] {
   const probe = document.createElement('span');
   probe.style.color = color;
   probe.style.display = 'none';
@@ -74,7 +73,9 @@ function initTheme(): void {
 function initNav(): void {
   const nav = document.querySelector<HTMLElement>('[data-nav]');
   if (!nav) return;
-  const update = (): void => nav.classList.toggle('nav--scrolled', window.scrollY > 24);
+  const update = (): void => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 24);
+  };
   window.addEventListener('scroll', update, { passive: true });
   update();
 }
@@ -104,40 +105,7 @@ function initReveal(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Pagination: `ol[data-paginate="3"]` shows three rows at a time; the [data-pager] that follows
-   it is revealed with previous / next and "1 / 2". Without JS every row shows.
-   --------------------------------------------------------------------------------------------- */
-function initPagination(): void {
-  document.querySelectorAll<HTMLElement>('[data-paginate]').forEach((list) => {
-    const size = Math.max(1, Number(list.dataset.paginate) || 3);
-    const rows = Array.from(list.children) as HTMLElement[];
-    const pages = Math.ceil(rows.length / size);
-    const pager = list.parentElement?.querySelector<HTMLElement>('[data-pager]');
-    if (!pager || pages <= 1) return;
-    const prev = pager.querySelector<HTMLButtonElement>('[data-pager-prev]');
-    const next = pager.querySelector<HTMLButtonElement>('[data-pager-next]');
-    const status = pager.querySelector<HTMLElement>('[data-pager-status]');
-    let page = 0;
-    const show = (to: number, from?: HTMLButtonElement | null): void => {
-      page = Math.max(0, Math.min(pages - 1, to));
-      rows.forEach((row, i) => { row.hidden = Math.floor(i / size) !== page; });
-      if (status) status.textContent = `${page + 1} / ${pages}`;
-      if (prev) prev.disabled = page === 0;
-      if (next) next.disabled = page === pages - 1;
-      if (!from) return;
-      // The button just used may now be disabled, which drops focus; hand it to the other one.
-      if (from.disabled) (from === next ? prev : next)?.focus();
-      if (list.getBoundingClientRect().top < 0) list.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
-    };
-    prev?.addEventListener('click', () => show(page - 1, prev));
-    next?.addEventListener('click', () => show(page + 1, next));
-    pager.hidden = false;
-    show(0);
-  });
-}
-
-/* ---------------------------------------------------------------------------------------------
-   Hero parallax: the field drifts against the cursor, ≤14px across, ≤10px down (AuraHero.jsx).
+   Parallax: the field drifts against the cursor, ≤14px across, ≤10px down (AuraHero.jsx).
    Fine pointers only; off under reduced motion.
    --------------------------------------------------------------------------------------------- */
 function initParallax(): void {
@@ -168,8 +136,8 @@ function initParallax(): void {
    MarbleField (components/motion/MarbleField.jsx). Domain-warped fbm thresholded against a 4×4
    Bayer matrix; one canvas pixel per `blockSize` CSS pixels. Colour from the canvas' CSS color.
    --------------------------------------------------------------------------------------------- */
-const BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
-function mhash(ix: number, iy: number): number {
+export const BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+export function mhash(ix: number, iy: number): number {
   let h = Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return (h >>> 0) / 4294967296;
@@ -180,7 +148,7 @@ function noise(x: number, y: number): number {
   const a = mhash(ix, iy), b = mhash(ix + 1, iy), c = mhash(ix, iy + 1), d = mhash(ix + 1, iy + 1);
   return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
 }
-function fbm(x: number, y: number, o: number): number {
+export function fbm(x: number, y: number, o: number): number {
   let v = 0, amp = 0.5, fr = 1, n = 0;
   for (let i = 0; i < o; i++) { v += amp * noise(x * fr, y * fr); n += amp; amp *= 0.5; fr *= 2.07; }
   return v / n;
@@ -481,7 +449,6 @@ export function initStoico(): void {
   initTheme();
   initNav();
   initReveal();
-  initPagination();
   initParallax();
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-marble]').forEach(attachMarble);
   document.querySelectorAll<HTMLElement>('[data-ascii-banner]').forEach(attachAsciiBanner);

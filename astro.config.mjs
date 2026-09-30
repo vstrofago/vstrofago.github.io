@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, passthroughImageService } from 'astro/config';
 
 // GitHub Pages:
 // - User site (repo named "<user>.github.io")   → served at https://<user>.github.io/        → BASE_PATH="/"
@@ -16,4 +16,7 @@ export default defineConfig({
     // Small pages: inline the CSS so the first paint needs no extra request.
     inlineStylesheets: 'always',
   },
+  // The content (src/content/) is Markdown, which wires up Astro's image service; the site
+  // processes no images, so pass them through rather than depend on sharp.
+  image: { service: passthroughImageService() },
 });
