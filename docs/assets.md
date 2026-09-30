@@ -87,6 +87,10 @@ One native `<dialog>` per project, `id="ficha-vs-00n"`:
 - Bottom: previous / next (wrap around the list); top right: close.
 - Opened from a star, a Registro row, a nav menu entry or another card; focus returns to
   whatever opened the first one.
+- Phones (≤760px): the planet steps back into the card's backdrop (faint, cut by the top
+  right corner, not interactive) and its caption goes, so the whole card, previous / next and
+  close fit one screen without scrolling (spacing tightens further under 720px of height).
+  Check a new project's card at 360×640 if its description is long.
 
 ## A new outer space (a link and its ship)
 
@@ -172,6 +176,15 @@ All in `initBridge` (`src/scripts/cosmos.ts`), redrawn to the section's real siz
 - The zone heights live in `site.css` (`.cosmos__upper`, `.cosmos__bridge`, `.cosmos__lower`);
   the bridge sits roughly mid-page.
 - Coordinates: `coordsOf(x, y)` maps x 0–100 to 00h–24h and y 0–100 to +60°…−60°.
+
+## The phones' sky sketch
+
+Under 860px the plane is hidden, and `Chart.astro` renders a still sketch of the same sky
+behind the welcome, at build time: the 12×6 grid with the −20° floor dashed, the constellation
+lines, each project's star (sized and dimmed by status, no animation) and 56 dust stars from a
+fixed hash. It's `aria-hidden`, takes no pointer events, sits at low opacity and fades out
+at its edges (`.cosmos__sketch` in `site.css`). It follows the content by itself: nothing to
+do when a project is added.
 
 ## Background stars and the star-eater
 
