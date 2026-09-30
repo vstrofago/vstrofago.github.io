@@ -10,7 +10,7 @@ import Ship from './ds/Ship.astro';
 import { languages, useTranslations, homeFor, type Lang } from '../i18n/ui';
 import { blogUrl, spaces } from '../data/spaces';
 import { projects, placeholder } from '../data/projects';
-import { catalogId, fields } from '../data/sky';
+import { fields } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -28,10 +28,10 @@ const home = homeFor(lang);
         </button>
         <div class="nav__panel" id="menu-projects" data-menu-panel hidden>
           <ul>
-            {projects.map((p, i) => (
+            {projects.map((p) => (
               <li>
-                <a class="nav__item" href={`${home}#${catalogId(i).toLowerCase()}`} data-ficha-open={catalogId(i).toLowerCase()}>
-                  <span class="nav__item-id">{catalogId(i)}</span>
+                <a class="nav__item" href={`${home}#${p.catalog.toLowerCase()}`} data-ficha-open={p.catalog.toLowerCase()}>
+                  <span class="nav__item-id">{p.catalog}</span>
                   <span class="nav__item-name">{(p.title ?? placeholder.title)[lang]}</span>
                   <span class="nav__item-meta">{fields[p.field].name}</span>
                 </a>

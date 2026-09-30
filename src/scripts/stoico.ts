@@ -73,7 +73,9 @@ function initTheme(): void {
 function initNav(): void {
   const nav = document.querySelector<HTMLElement>('[data-nav]');
   if (!nav) return;
-  const update = (): void => nav.classList.toggle('nav--scrolled', window.scrollY > 24);
+  const update = (): void => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 24);
+  };
   window.addEventListener('scroll', update, { passive: true });
   update();
 }

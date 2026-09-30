@@ -703,8 +703,8 @@ function initNavMenus(): void {
 /* ---------------------------------------------------------------------------------------------
    The fleet: the outer spaces' ships patrol their grid. Every 1.4s one ship takes a step of
    half a grid cell along a grid axis (never diagonally), turning its hull to the heading, and
-   never strays more than two steps from its post (`at` in spaces.ts) or comes too close to
-   another ship. A ship being pointed at or focused holds still, so it's always easy to click;
+   never strays more than two steps from its post (its `x` / `y` in src/content/spaces/) or
+   comes too close to another ship. A ship being pointed at or focused holds still, so it's always easy to click;
    the others keep moving. Still under reduced motion, paused offscreen and in hidden tabs.
    --------------------------------------------------------------------------------------------- */
 function initFleet(): void {

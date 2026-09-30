@@ -13,7 +13,7 @@ import Icon from './ds/Icon.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder, type ProjectStatus } from '../data/projects';
 import { spaces } from '../data/spaces';
-import { catalogId, constellationOf } from '../data/sky';
+import { fields } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -66,9 +66,9 @@ const tabs = [
             </tr>
           </thead>
           <tbody>
-            {projects.map((p, i) => {
-              const id = catalogId(i);
-              const constellation = constellationOf(p.id);
+            {projects.map((p) => {
+              const id = p.catalog;
+              const constellation = fields[p.field].name;
               return (
                 <tr id={id.toLowerCase()} class="term__row" data-row-open>
                   <td class="term__id">{id}</td>
@@ -78,7 +78,7 @@ const tabs = [
                   </th>
                   <td class="term__class">
                     <span>{p.category[lang]}</span>
-                    <span class="term__sub">{p.tags ?? placeholder.tags[lang]}{constellation && ` · ${constellation}`}</span>
+                    <span class="term__sub">{p.tags ?? placeholder.tags[lang]} · {constellation}</span>
                   </td>
                   <td class="term__status">
                     <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>

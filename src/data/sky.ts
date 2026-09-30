@@ -1,16 +1,20 @@
-import { projects, type ProjectStatus, type Field } from './projects';
+// The star chart's rules and maths: the fields (constellations), the bridge, the −20° floor,
+// coordinates, magnitudes and catalog numbers. No data lives here: every project (and where
+// its star sits, and its planet) is one Markdown file in src/content/projects/, read by
+// src/data/projects.ts. This module is pure on purpose: the browser (cosmos.ts) and the
+// content schema (src/content.config.ts) both import it.
 
-// The star chart. Every project in projects.ts is a star; this file says where it sits, which
-// constellation it belongs to and what its planet looks like up close.
-// - `x` / `y`: position in the upper space (the stars' box under the welcome), 0–100 from its
-//   top left. The whole width is free: the bridge opens below it. y maps to declination
-//   (+60° at 0, −60° at 100). Rule: no project below the −20° line, so y ≤ FLOOR_Y (66.6);
-//   placeOf clamps anything lower.
-// - `side`: which side of the star its name goes on.
-// - `planet`: the body drawn in its card. Omit it and one is derived from the id.
-// A project with no entry here still appears, near the centre of its field's constellation.
+export const statuses = ['live', 'wip', 'soon'] as const;
+export type ProjectStatus = (typeof statuses)[number];
 
-export type PlanetKind = 'rocky' | 'gas';
+/** The three fixed constellations, one per project `field`:
+ *  automata (AI: agent skills, MCP servers, anything for models) · systemis (an application or
+ *  a whole system someone uses) · creavis (artistic and creative work: themes, music, audiovisual). */
+export const fieldKeys = ['automata', 'systemis', 'creavis'] as const;
+export type Field = (typeof fieldKeys)[number];
+
+export const planetKinds = ['rocky', 'gas'] as const;
+export type PlanetKind = (typeof planetKinds)[number];
 
 export interface Planet {
   kind: PlanetKind;
@@ -20,11 +24,14 @@ export interface Planet {
   tilt?: number;
 }
 
+/** Where a star sits in the upper space (the stars' box under the welcome), 0–100 from its top
+ *  left, which side its name goes on, and the planet drawn in its card. y maps to declination
+ *  (+60° at 0, −60° at 100). */
 export interface Place {
   x: number;
   y: number;
-  side?: 'left' | 'right';
-  planet?: Planet;
+  side: 'left' | 'right';
+  planet: Planet;
 }
 
 export interface Constellation {
@@ -36,32 +43,13 @@ export interface Constellation {
   members: string[];
 }
 
-export const places: Record<string, Place> = {
-  // Systemis
-  vigia: { x: 48, y: 22, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
-  // Automata
-  'zettelkasten-organizer': { x: 72, y: 32, side: 'right', planet: { kind: 'gas', tilt: -8 } },
-  'pnpm-hardening': { x: 84, y: 60, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
-  // Creavis
-  'omarchy-brutalistoic': { x: 10, y: 22, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
-  'hugo-theme-plano': { x: 24, y: 48, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 12, y: 62, side: 'right', planet: { kind: 'gas' } },
-};
-
-/** The three fixed constellations, one per `field` in projects.ts, named in the Latin of star
- *  charts. Each has a centre (new stars without a place land around it) and a spot for its name.
- *  Members come from projects.ts, joined in their catalog order. */
+/** Each field's constellation, named in the Latin of star charts, with a centre (a project
+ *  without a position lands around it) and a spot for its name. */
 export const fields: Record<Field, { name: string; center: { x: number; y: number }; at: { x: number; y: number } }> = {
   automata: { name: 'Automata', center: { x: 78, y: 46 }, at: { x: 74, y: 50 } },
   systemis: { name: 'Systemis', center: { x: 50, y: 30 }, at: { x: 48, y: 12 } },
   creavis: { name: 'Creavis', center: { x: 16, y: 50 }, at: { x: 9, y: 36 } },
 };
-
-export const constellations: Constellation[] = (Object.keys(fields) as Field[]).map((f) => ({
-  name: fields[f].name,
-  at: fields[f].at,
-  members: projects.filter((p) => p.field === f).map((p) => p.id),
-}));
 
 /** The Einstein–Rosen bridge, drawn by cosmos.ts in the middle of the page, top to bottom:
  *  the grid is straight down to the bridge's zone (the gap between the upper space and the
@@ -81,26 +69,24 @@ function unit(id: string, salt = 0): number {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-export function placeOf(id: string): Required<Place> {
-  const p = places[id];
-  const c = fields[projects.find((q) => q.id === id)?.field ?? 'systemis'].center;
-  const x = p?.x ?? Math.round(c.x + (unit(id, 1) - 0.5) * 20);
-  const y = Math.min(FLOOR_Y, Math.max(4, p?.y ?? Math.round(c.y + (unit(id, 2) - 0.5) * 30)));
+/** A star's full place: what its file sets, the rest derived from its id (the same id always
+ *  gives the same spot and planet). Without x / y it lands near its field's centre; anything
+ *  derived is clamped above FLOOR_Y. */
+export function placeFor(id: string, field: Field, given: Partial<Place> = {}): Place {
+  const c = fields[field].center;
+  const x = given.x ?? Math.round(c.x + (unit(id, 1) - 0.5) * 20);
+  const y = Math.min(FLOOR_Y, Math.max(4, given.y ?? Math.round(c.y + (unit(id, 2) - 0.5) * 30)));
   return {
     x,
     y,
-    side: p?.side ?? (x > 70 ? 'left' : 'right'),
-    planet: p?.planet ?? {
+    side: given.side ?? (x > 70 ? 'left' : 'right'),
+    planet: given.planet ?? {
       kind: unit(id, 3) > 0.5 ? 'gas' : 'rocky',
       ring: unit(id, 4) > 0.65,
       moon: unit(id, 5) > 0.7,
       tilt: Math.round((unit(id, 6) - 0.5) * 40),
     },
   };
-}
-
-export function constellationOf(id: string): string | undefined {
-  return constellations.find((c) => c.members.includes(id))?.name;
 }
 
 /** Chart position as right ascension / declination, for the card and the cursor readout. */
@@ -118,5 +104,5 @@ export function coordsOf(x: number, y: number): string {
 /** Apparent magnitude per status: brighter (smaller) is more finished. */
 export const magnitude: Record<ProjectStatus, string> = { live: '1.0', wip: '3.0', soon: '5.5' };
 
-/** Catalog number from the position in projects.ts: VS-001, VS-002… */
-export const catalogId = (index: number): string => `VS-${String(index + 1).padStart(3, '0')}`;
+/** Catalog number, from a project's `catalog`: 1 → VS-001. */
+export const catalogId = (n: number): string => `VS-${String(n).padStart(3, '0')}`;

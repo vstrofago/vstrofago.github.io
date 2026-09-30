@@ -9,7 +9,7 @@ import Label from './ds/Label.astro';
 import Icon from './ds/Icon.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder } from '../data/projects';
-import { placeOf, catalogId, constellationOf, coordsOf, magnitude } from '../data/sky';
+import { fields, coordsOf, magnitude } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -19,12 +19,12 @@ const statusLabel = { live: t('status.live'), wip: t('status.wip'), soon: t('sta
 const planetLabel = { live: t('planet.live'), wip: t('planet.wip'), soon: t('planet.soon') };
 ---
 {projects.map((p, i) => {
-  const id = catalogId(i);
+  const id = p.catalog;
   const key = id.toLowerCase();
-  const at = placeOf(p.id);
-  const constellation = constellationOf(p.id);
-  const prev = catalogId((i - 1 + projects.length) % projects.length).toLowerCase();
-  const next = catalogId((i + 1) % projects.length).toLowerCase();
+  const at = p.place;
+  const constellation = fields[p.field].name;
+  const prev = projects[(i - 1 + projects.length) % projects.length].catalog.toLowerCase();
+  const next = projects[(i + 1) % projects.length].catalog.toLowerCase();
   return (
     <dialog class="ficha" id={`ficha-${key}`} aria-labelledby={`ficha-${key}-title`} data-ficha={key}>
       <div class="ficha__inner">
@@ -47,7 +47,7 @@ const planetLabel = { live: t('planet.live'), wip: t('planet.wip'), soon: t('pla
           <h2 id={`ficha-${key}-title`} class="heading heading--1">{(p.title ?? placeholder.title)[lang]}</h2>
           <p class="text text--body-l text--muted">{(p.description ?? placeholder.description)[lang]}</p>
           <dl class="ficha__facts">
-            {constellation && (<div><dt>{t('ficha.constellation')}</dt><dd>{constellation}</dd></div>)}
+            <div><dt>{t('ficha.constellation')}</dt><dd>{constellation}</dd></div>
             <div><dt>{t('ficha.magnitude')}</dt><dd>{magnitude[p.status]} · {statusLabel[p.status]}</dd></div>
             <div><dt>{t('ficha.composition')}</dt><dd>{p.tags ?? placeholder.tags[lang]}</dd></div>
             <div><dt>{t('ficha.coords')}</dt><dd>{coordsOf(at.x, at.y)}</dd></div>

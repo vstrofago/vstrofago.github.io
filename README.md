@@ -10,6 +10,7 @@ Static site built with [Astro](https://astro.build), styled with **Stoico**, the
 npm install
 npm run dev       # http://localhost:4321
 npm run build     # static output in dist/
+npm run check     # type-check (.ts and .astro)
 npm run preview   # serve dist/ locally
 ```
 
@@ -25,14 +26,7 @@ docker compose --profile build up serve  # the static build behind nginx: http:/
 docker compose down                      # stop
 ```
 
-To compare two branches side by side, check each one out in its own worktree and give each its own ports and project name:
-
-```sh
-git worktree add ../vstro-a claude/practical-ramanujan-tlu07e
-git worktree add ../vstro-b claude/transmision-tlu07e
-(cd ../vstro-a && COMPOSE_BRANCH=a PORT=4321 docker compose up -d)
-(cd ../vstro-b && COMPOSE_BRANCH=b PORT=4322 docker compose up -d)
-```
+`PORT` and `BUILD_PORT` change the host ports and `COMPOSE_BRANCH` the Compose project name, so two copies of the repo can run at once.
 
 After `package.json` changes, rebuild with `docker compose up --build`.
 
@@ -50,21 +44,25 @@ Where it ends up depends on the repository name. The workflow sets the base path
 | anything else, e.g. `site` | `https://vstrofago.github.io/site/` |
 | any name + `public/CNAME` with your domain | `https://your-domain/` |
 
-**Your blog already lives at `vstrofago.github.io/blog/`.** If the blog is its own repository called `blog`, you can put this landing in a repository called `vstrofago.github.io` and both keep working: the landing at `/`, the blog at `/blog/`. If instead the blog is inside a `vstrofago.github.io` repository already, deploy this one under a different repository name (or a custom domain) so they don't overwrite each other.
+This site is deployed from the `vstrofago.github.io` repository, so it serves `/`. The blog is a separate site, published from its own repository at `/blog/`; the two share the origin, which is why the theme choice carries over between them.
 
 To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.github.io npm run build`.
 
 ## Edit content
 
+Projects and links are Markdown files: the frontmatter is the data, one file each. Start from the templates in `src/content/_templates/` and edit them in any text or Markdown editor (GitHub's web editor works too). The build checks every file (both languages, at least one link, the chart's rules) and says which file and field are wrong.
+
 | What | Where |
 | --- | --- |
+| A project (its star, catalog row, card and planet) | `src/content/projects/<id>.md` · template `src/content/_templates/project.md` |
+| A link (an outer space and its ship) | `src/content/spaces/<id>.md` · template `src/content/_templates/space.md` |
+| The rules each file must follow | `src/content.config.ts` |
+| Ship hulls | `src/data/ships.ts` |
+| Constellations, the bridge, the −20° floor | `src/data/sky.ts` |
 | All interface copy, both languages | `src/i18n/ui.ts` |
-| Projects (stars, catalog rows and cards) | `src/data/projects.ts` |
-| Where each star sits, constellations, planet looks, the bridge | `src/data/sky.ts` |
 | ASCII animations (ASCIIGen exports) | `public/ascii/` |
-| Links (the bridge's far side and the HUD's Anomalías tab) | `src/data/spaces.ts` |
 
-Projects show bracketed placeholders until you give them a `title` and `description`. Each row lists its `links` as quiet text links: `github` ("Source"), `demo`, or `more` for anywhere else with details.
+Projects show bracketed placeholders until you give them a `title` and `description`. Links show as `demo`, `github` ("Source") and `more`, in that order. `docs/assets.md` is the recipe for every drawn thing. Agents: see `AGENTS.md` and the `add-to-chart` skill in `.claude/skills/`.
 
 ## Structure
 
@@ -79,7 +77,10 @@ src/
                     ascii.ts: ASCIIGen player (frames in public/ascii/<name>/<quality>/)
   styles/           fonts · stoico/ (the system, verbatim) · site (layout + type primitives)
   assets/fonts/     self-hosted, subset WOFF2 (Geist, Geist Mono, Geist Pixel)
-  i18n/ · data/
+  content/          projects/ · spaces/ (one Markdown file each) · _templates/
+  content.config.ts the content's schema and rules
+  data/             sky.ts (chart rules and maths) · ships.ts · projects.ts / spaces.ts (read the content) · icons.ts
+  i18n/
 ```
 
-See `CLAUDE.md` for the design rules to follow when changing things, and `docs/assets.md` for how every drawn asset (stars, planets and cards, ships, the bridge) is made and how to add new ones.
+See `AGENTS.md` for the design rules to follow when changing things, and `docs/assets.md` for how every drawn asset (stars, planets and cards, ships, the bridge) is made and how to add new ones.
