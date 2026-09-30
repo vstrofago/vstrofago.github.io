@@ -88,13 +88,15 @@ const outer = spaces.filter((s) => s.url);
 
   <div class="cosmos__lower" id="outer" data-outer>
     <p class="outer__legend" id="outer-legend">{t('nav.elsewhere')}</p>
-    <ul class="outer__list" aria-labelledby="outer-legend">
+    <ul class="outer__field" aria-labelledby="outer-legend">
       {outer.map((s) => (
-        <li>
+        <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
           <a class="outer__link" href={s.url} rel="noopener" data-hole-exit data-outer-exit>
             <Ship kind={s.ship} size={18} class="outer__ship" />
-            <span class="outer__name">{s.name[lang]}</span>
-            <span class="outer__handle">{s.handle}</span>
+            <span class="outer__label">
+              <span class="outer__name">{s.name[lang]}</span>
+              <span class="outer__handle">{s.handle}</span>
+            </span>
             <Icon name="arrow-up-right" size={14} />
           </a>
         </li>

@@ -86,6 +86,21 @@ body { margin: 0; min-height: 100vh; }
 .nav a { text-decoration: none; }
 .nav__links a { font: 400 14px/1 var(--font-sans); color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
 .nav__links a:hover { color: var(--fg); }
+/* Projects / Outer spaces as disclosure menus (wide screens, JS): a quiet trigger and a plain list. */
+.nav__menu { position: relative; display: flex; }
+.nav__link[hidden], .nav__trigger[hidden] { display: none; }
+.nav__trigger { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font: 400 14px/1 var(--font-sans); color: var(--fg-muted); cursor: pointer; transition: color var(--dur-fast) var(--ease-standard); }
+.nav__trigger:hover, .nav__trigger[aria-expanded="true"] { color: var(--fg); }
+.nav__trigger .st-icon-svg { transition: transform var(--dur-fast) var(--ease-standard); }
+.nav__trigger[aria-expanded="true"] .st-icon-svg { transform: rotate(180deg); }
+.nav__trigger:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 2px; }
+.nav__panel { position: absolute; top: calc(100% + 18px); left: -14px; z-index: 30; min-width: 340px; padding: 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-surface); background: var(--surface); box-shadow: var(--shadow-3); }
+.nav__panel[hidden] { display: none; }
+.nav__panel ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.nav__links .nav__item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 9px 10px; border-radius: var(--radius-control); font: 400 14px/1.3 var(--font-sans); color: var(--fg); }
+.nav__links .nav__item:hover, .nav__links .nav__item:focus-visible { background: var(--hover); color: var(--fg); }
+.nav__item-id, .nav__item-meta { font: 400 11px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
+.nav__item-ship { display: grid; color: var(--fg); }
 .nav__tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
 .nav__lang { display: flex; gap: 2px; }
 .nav__lang a { display: inline-flex; align-items: center; height: var(--control-h-s); padding: 0 8px; border-radius: var(--radius-2); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); color: var(--fg-subtle); transition: color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard); }
@@ -121,7 +136,7 @@ body { margin: 0; min-height: 100vh; }
 .cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-6) var(--gutter) 0; }
 .cosmos__bridge { height: clamp(460px, 64vh, 640px); }
 /* The lower space: its top is the flare (the bridge opening out); the outer spaces sit below it, on the straight grid. */
-.cosmos__lower { scroll-margin-top: -120px; position: relative; z-index: 2; min-height: clamp(640px, 86vh, 900px); display: grid; align-content: start; justify-items: center; gap: var(--space-6); padding-top: clamp(220px, 30vh, 300px); padding-bottom: var(--space-10); }
+.cosmos__lower { scroll-margin-top: -120px; position: relative; z-index: 2; min-height: clamp(640px, 86vh, 900px); display: grid; align-content: start; justify-items: center; gap: var(--space-5); padding-top: clamp(220px, 30vh, 300px); padding-bottom: var(--space-8); }
 
 .chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
@@ -178,15 +193,20 @@ body { margin: 0; min-height: 100vh; }
 
 /* The lower space: the outer spaces, large enough to read, under their name. */
 .outer__legend { margin: 0; padding: 4px 10px; background: var(--bg); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); }
-.outer__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); justify-items: stretch; min-width: min(440px, 90vw); }
-.outer__link { display: grid; grid-template-columns: 18px auto minmax(0, 1fr) 14px; align-items: center; gap: var(--space-3); padding: 10px var(--space-4); border-radius: var(--radius-control); background: var(--bg); }
+/* The ships fly scattered over the lower space's straight grid, like the stars above: the ship
+   centred on its point, name and address to its right. */
+.outer__field { position: relative; list-style: none; margin: 0; padding: 0; width: calc(100% - 2 * var(--gutter)); height: clamp(420px, 56vh, 580px); }
+.outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; }
+.outer__link { position: absolute; top: 0; left: 0; transform: translate(-19px, -50%); display: inline-flex; align-items: center; gap: var(--space-3); padding: 8px 10px; border-radius: var(--radius-control); white-space: nowrap; }
 .stoico a.outer__link { text-decoration: none; color: var(--fg); }
-.outer__ship { display: grid; color: var(--fg); }
+.outer__ship { display: grid; color: var(--fg); transition: transform var(--dur-base) var(--ease-out); }
+.outer__link:hover .outer__ship, .outer__link:focus-visible .outer__ship { transform: translateY(-3px); }
 .ship svg { display: block; }
-.outer__name { font: 500 16px/1.3 var(--font-sans); letter-spacing: -0.005em; }
-.outer__handle { font: 400 12px/1.4 var(--font-mono); color: var(--fg-subtle); justify-self: end; }
-.outer__link .st-icon-svg { color: var(--fg-subtle); transition: color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
-.outer__link:hover .st-icon-svg, .outer__link:focus-visible .st-icon-svg { color: var(--fg); transform: translate(2px, -2px); }
+.outer__label { display: grid; gap: 2px; }
+.outer__name { font: 500 15px/1.2 var(--font-sans); letter-spacing: -0.005em; }
+.outer__handle { font: 400 11px/1.3 var(--font-mono); color: var(--fg-subtle); }
+.outer__link .st-icon-svg { color: var(--fg-subtle); opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.outer__link:hover .st-icon-svg, .outer__link:focus-visible .st-icon-svg { opacity: 1; transform: translate(2px, -2px); }
 .outer__link:hover .outer__handle, .outer__link:focus-visible .outer__handle { color: var(--fg-muted); }
 @media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } }
 

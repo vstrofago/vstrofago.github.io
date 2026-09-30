@@ -1,10 +1,16 @@
 ---
 // Sticky nav. Transparent at rest; gains glass and a hairline only after scrolling (stoico.ts
 // toggles .nav--scrolled). Wordmark left, three quiet links, then language and theme.
+// Projects and Outer spaces are links to the Registro. On wide screens with JS (the plane's
+// view) cosmos.ts turns each into a disclosure: a button that drops a plain list, for quick
+// and accessible navigation. Projects open their card; outer spaces go to their link.
 import Wordmark from './ds/Wordmark.astro';
 import Icon from './ds/Icon.astro';
+import Ship from './ds/Ship.astro';
 import { languages, useTranslations, homeFor, type Lang } from '../i18n/ui';
-import { blogUrl } from '../data/spaces';
+import { blogUrl, spaces } from '../data/spaces';
+import { projects, placeholder } from '../data/projects';
+import { catalogId, fields } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -15,9 +21,45 @@ const home = homeFor(lang);
   <div class="container nav__inner">
     <a class="nav__brand" href={home} aria-label={t('a11y.home')}><Wordmark size={18} /></a>
     <nav class="nav__links" aria-label={t('a11y.mainNav')}>
-      <a href={`${home}#hud-bodies`}>{t('nav.catalog')}</a>
-      <a href={blogUrl}>{t('nav.notes')}</a>
-      <a href={`${home}#hud-exits`}>{t('nav.elsewhere')}</a>
+      <div class="nav__menu" data-nav-menu>
+        <a class="nav__link" href={`${home}#hud-bodies`} data-menu-link>{t('nav.catalog')}</a>
+        <button class="nav__trigger" type="button" aria-expanded="false" aria-controls="menu-projects" data-menu-trigger hidden>
+          {t('nav.catalog')}<Icon name="chevron-down" size={12} />
+        </button>
+        <div class="nav__panel" id="menu-projects" data-menu-panel hidden>
+          <ul>
+            {projects.map((p, i) => (
+              <li>
+                <a class="nav__item" href={`${home}#${catalogId(i).toLowerCase()}`} data-ficha-open={catalogId(i).toLowerCase()}>
+                  <span class="nav__item-id">{catalogId(i)}</span>
+                  <span class="nav__item-name">{(p.title ?? placeholder.title)[lang]}</span>
+                  <span class="nav__item-meta">{fields[p.field].name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <a class="nav__link" href={blogUrl}>{t('nav.notes')}</a>
+      <div class="nav__menu" data-nav-menu>
+        <a class="nav__link" href={`${home}#hud-exits`} data-menu-link>{t('nav.elsewhere')}</a>
+        <button class="nav__trigger" type="button" aria-expanded="false" aria-controls="menu-outer" data-menu-trigger hidden>
+          {t('nav.elsewhere')}<Icon name="chevron-down" size={12} />
+        </button>
+        <div class="nav__panel" id="menu-outer" data-menu-panel hidden>
+          <ul>
+            {spaces.filter((s) => s.url).map((s) => (
+              <li>
+                <a class="nav__item" href={s.url} rel="noopener">
+                  <Ship kind={s.ship} size={14} class="nav__item-ship" />
+                  <span class="nav__item-name">{s.name[lang]}</span>
+                  <span class="nav__item-meta">{s.handle}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </nav>
     <div class="nav__tools">
       <nav class="nav__lang" aria-label={t('a11y.langNav')}>

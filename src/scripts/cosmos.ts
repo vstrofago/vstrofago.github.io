@@ -8,6 +8,7 @@
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
 //   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
+//   [data-nav-menu]       wide screens: Projects / Outer spaces drop a plain list
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
@@ -634,6 +635,64 @@ function initHud(): void {
   window.addEventListener('hashchange', follow);
 }
 
+/* ---------------------------------------------------------------------------------------------
+   Nav menus (wide screens, where the plane replaces the Registro): Projects and Outer spaces
+   become disclosure buttons that drop a plain list. Escape closes and returns focus to the
+   button; so do a click outside or focus leaving the menu. Picking a project closes the menu
+   and opens its card (the card hands focus back to the button when it closes). Narrower
+   screens keep the plain links to the Registro.
+   --------------------------------------------------------------------------------------------- */
+function initNavMenus(): void {
+  const wide = window.matchMedia?.('(min-width: 860px)');
+  const menus = Array.from(document.querySelectorAll<HTMLElement>('[data-nav-menu]')).flatMap((menu) => {
+    const link = menu.querySelector<HTMLElement>('[data-menu-link]');
+    const btn = menu.querySelector<HTMLButtonElement>('[data-menu-trigger]');
+    const panel = menu.querySelector<HTMLElement>('[data-menu-panel]');
+    return link && btn && panel ? [{ menu, link, btn, panel }] : [];
+  });
+  if (!wide || !menus.length) return;
+  type Menu = (typeof menus)[number];
+  const isOpen = (m: Menu): boolean => m.btn.getAttribute('aria-expanded') === 'true';
+  const close = (m: Menu, focus = false): void => {
+    m.btn.setAttribute('aria-expanded', 'false');
+    m.panel.hidden = true;
+    if (focus) m.btn.focus();
+  };
+  const mode = (): void => {
+    menus.forEach((m) => {
+      m.link.hidden = wide.matches;
+      m.btn.hidden = !wide.matches;
+      close(m);
+    });
+  };
+  menus.forEach((m) => {
+    m.btn.addEventListener('click', () => {
+      const was = isOpen(m);
+      menus.forEach((o) => close(o));
+      if (was) return;
+      m.btn.setAttribute('aria-expanded', 'true');
+      m.panel.hidden = false;
+    });
+    m.menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen(m)) { e.stopPropagation(); close(m, true); }
+    });
+    // Capture: runs before the card opens, so the card remembers the button, not a hidden item.
+    m.panel.addEventListener('click', (e) => {
+      if (!(e.target as Element).closest('a')) return;
+      m.btn.focus();
+      close(m);
+    }, true);
+    m.menu.addEventListener('focusout', (e) => {
+      if (!m.menu.contains(e.relatedTarget as Node | null)) close(m);
+    });
+  });
+  document.addEventListener('click', (e) => {
+    menus.forEach((m) => { if (!m.menu.contains(e.target as Node)) close(m); });
+  });
+  wide.addEventListener?.('change', mode);
+  mode();
+}
+
 export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
@@ -641,6 +700,7 @@ export function initCosmos(): void {
   initBridge();
   initReadout();
   initHud();
+  initNavMenus();
   initFichas(planets);
   initScreensaver();
   initOrbitDay();
