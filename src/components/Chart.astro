@@ -9,6 +9,8 @@
 // the straight grid, each flying its pixel ship. Stars and spaces are one file each in src/content/.
 // Stars open their card (Fichas.astro); without JS they link to the Registro rows.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
+// Behind the welcome there, a sketch of the same sky (grid, constellation lines, stars and some
+// dust), rendered at build time, faint and still: decoration only, never interactive.
 import Mark from './ds/Mark.astro';
 import Icon from './ds/Icon.astro';
 import Ship from './ds/Ship.astro';
@@ -31,6 +33,18 @@ const lines = constellations.flatMap((c) =>
   }),
 );
 const size = { live: 18, wip: 14, soon: 9 } as const;
+// The phones' sketch: the stars smaller, and a still dust of background stars (deterministic,
+// so every build draws the same sky).
+const sketchSize = { live: 9, wip: 7, soon: 5 } as const;
+const dust = Array.from({ length: 56 }, (_, i) => {
+  const r = (salt: number) => {
+    let h = 2166136261 ^ salt;
+    h = Math.imul(h ^ i, 16777619);
+    h = Math.imul(h ^ (h >>> 13), 2246822507);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  return { x: +(r(1) * 100).toFixed(2), y: +(r(2) * 100).toFixed(2), o: +(0.25 + r(3) * 0.6).toFixed(2) };
+});
 const outer = spaces.filter((s) => s.url);
 ---
 <section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-bridge={JSON.stringify(bridge)}>
@@ -38,6 +52,18 @@ const outer = spaces.filter((s) => s.url);
     <canvas class="cosmos__stars-bg" data-starfield></canvas>
   </div>
   <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
+
+  <div class="cosmos__sketch" aria-hidden="true">
+    <svg class="sketch__lines" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">
+      {Array.from({ length: 11 }, (_, i) => <line class="sketch__grid" x1={(i + 1) * (100 / 12)} y1="0" x2={(i + 1) * (100 / 12)} y2="100" vector-effect="non-scaling-stroke" />)}
+      {Array.from({ length: 5 }, (_, i) => <line class:list={['sketch__grid', i === 3 && 'sketch__floor']} x1="0" y1={(i + 1) * (100 / 6)} x2="100" y2={(i + 1) * (100 / 6)} vector-effect="non-scaling-stroke" />)}
+      {lines.map(({ a, b }) => <line class="sketch__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
+      {dust.map((d) => <rect class="sketch__dust" x={d.x} y={d.y} width="0.5" height="0.35" opacity={d.o} />)}
+    </svg>
+    <ul class="sketch__stars">
+      {stars.map(({ p, at }) => <li class={`sketch__star sketch__star--${p.status}`} style={`--x:${at.x};--y:${at.y}`}><Mark size={sketchSize[p.status]} /></li>)}
+    </ul>
+  </div>
 
   <div class="cosmos__intro container" data-reveal>
     <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
