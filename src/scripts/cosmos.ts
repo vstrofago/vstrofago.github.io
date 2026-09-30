@@ -471,7 +471,9 @@ function initBridge(): void {
     const Rm = Math.min(W * geo.radius, geo.maxRadius);
     const a0 = top(zone), zh = zone.offsetHeight;
     const aA = a0 + zh * geo.mouthA, aB = a0 + zh * geo.mouthB;
-    const lowTop = top(lower), aF = lowTop + lower.offsetHeight * geo.flare;
+    // The flare ends just above the outer spaces, so they sit on the straight grid.
+    const legendEl = lower.querySelector<HTMLElement>('.outer__legend');
+    const aF = legendEl ? top(legendEl) - (W / 12) * 0.75 : top(lower) + lower.offsetHeight * geo.flare;
     const cell = W / 12;
     const rIn = (a: number): number => Rm + (R0 - Rm) * (1 - ease((a - a0) / (aA - a0)));
     const rOut = (a: number): number => Rm + (R0 - Rm) * ease((a - aB) / (aF - aB));
@@ -539,7 +541,7 @@ function initBridge(): void {
     // Ghosts: down a grid line, into the mouth, through the throat, out to an outer space.
     const secRect = sec.getBoundingClientRect();
     ghosts.forEach((el, i) => {
-      const star = exits[i]?.querySelector('.outer__star');
+      const star = exits[i]?.querySelector('.outer__ship');
       if (!star) return;
       const r = star.getBoundingClientRect();
       const to = { x: r.left + r.width / 2 - secRect.left, y: r.top + r.height / 2 - secRect.top };

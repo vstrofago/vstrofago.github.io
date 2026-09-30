@@ -112,15 +112,16 @@ body { margin: 0; min-height: 100vh; }
 .cosmos__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
 .cosmos__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .cosmos__warp path { fill: none; stroke-width: 1; }
-.cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-4); padding-top: var(--space-9); padding-bottom: var(--space-6); text-align: center; }
+.cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-7); padding-bottom: var(--space-5); text-align: center; }
 .chart__head { display: grid; gap: var(--space-4); justify-items: center; }
-.chart__title { font-size: clamp(28px, 3vw, 44px); line-height: 1.1; letter-spacing: -0.01em; max-width: 24ch; }
+.chart__title { font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; letter-spacing: -0.01em; max-width: 26ch; }
 .chart__lead { max-width: 40ch; }
 /* Readout and magnitudes: at the top, under the welcome. */
 .cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-3); pointer-events: none; }
 .cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-6) var(--gutter) 0; }
 .cosmos__bridge { height: clamp(460px, 64vh, 640px); }
-.cosmos__lower { scroll-margin-top: 48px; position: relative; z-index: 2; min-height: clamp(520px, 70vh, 720px); display: grid; align-content: start; justify-items: center; gap: var(--space-6); padding-top: var(--space-10); padding-bottom: var(--space-10); }
+/* The lower space: its top is the flare (the bridge opening out); the outer spaces sit below it, on the straight grid. */
+.cosmos__lower { scroll-margin-top: -120px; position: relative; z-index: 2; min-height: clamp(640px, 86vh, 900px); display: grid; align-content: start; justify-items: center; gap: var(--space-6); padding-top: clamp(220px, 30vh, 300px); padding-bottom: var(--space-10); }
 
 .chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
@@ -178,10 +179,10 @@ body { margin: 0; min-height: 100vh; }
 /* The lower space: the outer spaces, large enough to read, under their name. */
 .outer__legend { margin: 0; padding: 4px 10px; background: var(--bg); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); }
 .outer__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); justify-items: stretch; min-width: min(440px, 90vw); }
-.outer__link { display: grid; grid-template-columns: 14px auto minmax(0, 1fr) 14px; align-items: center; gap: var(--space-3); padding: 10px var(--space-4); border-radius: var(--radius-control); background: var(--bg); }
+.outer__link { display: grid; grid-template-columns: 18px auto minmax(0, 1fr) 14px; align-items: center; gap: var(--space-3); padding: 10px var(--space-4); border-radius: var(--radius-control); background: var(--bg); }
 .stoico a.outer__link { text-decoration: none; color: var(--fg); }
-.outer__star { display: grid; }
-.outer__star .animation-mark { color: var(--fg); }
+.outer__ship { display: grid; color: var(--fg); }
+.ship svg { display: block; }
 .outer__name { font: 500 16px/1.3 var(--font-sans); letter-spacing: -0.005em; }
 .outer__handle { font: 400 12px/1.4 var(--font-mono); color: var(--fg-subtle); justify-self: end; }
 .outer__link .st-icon-svg { color: var(--fg-subtle); transition: color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
@@ -212,7 +213,7 @@ body { margin: 0; min-height: 100vh; }
   .cosmos { background-image: none; }
   .cosmos__field, .cosmos__warp, .cosmos__bar, .cosmos__upper, .cosmos__bridge, .cosmos__lower, .bridge__ghosts { display: none; }
   .cosmos__intro { padding-top: var(--space-8); padding-bottom: 0; }
-  .cosmos__intro .st-label { display: none; }
+  .cosmos__intro .st-label, .chart__lead { display: none; }
 }
 @media (min-width: 860px) {
   .js .hud-section { display: none; }
@@ -255,8 +256,9 @@ body { margin: 0; min-height: 100vh; }
   background-repeat: no-repeat; }
 .hud__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 0 var(--space-4) var(--space-2); border-bottom: 1px solid var(--border-strong); }
 .hud__tabs { display: flex; gap: var(--space-1); }
+@media (max-width: 440px) { .hud__readout { display: none; } .hud__tab { padding: 0 var(--space-2); } }
 .hud__tabs[hidden] { display: none; }
-.hud__tab { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--control-h-s); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--radius-2); background: none; color: var(--fg-subtle); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; cursor: pointer; transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
+.hud__tab { display: inline-flex; align-items: center; white-space: nowrap; gap: var(--space-2); height: var(--control-h-s); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--radius-2); background: none; color: var(--fg-subtle); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; cursor: pointer; transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
 .hud__tab:hover { color: var(--fg); }
 .hud__tab[aria-selected="true"] { color: var(--fg); border-color: var(--border-strong); }
 .hud__tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
@@ -335,6 +337,12 @@ tr:target .term__id { color: var(--fg); }
 .footer .ascii-banner { height: calc(22 * 14px); }
 .footer .ascii-banner__layer { font-size: 11px; line-height: 14px; }
 .footer__inner { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-5); padding-bottom: var(--space-8); text-align: center; }
+/* Wide: the words sit inside the ASCII field, along its bottom band under the star, so the
+   footer takes no extra height and the plane gets more room above it. */
+@media (min-width: 720px) {
+  .footer__inner { position: absolute; left: 0; right: 0; bottom: var(--space-3); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--space-2) var(--space-5); padding: 0; }
+  .footer__inner > * { padding: 2px 8px; background: var(--bg); }
+}
 
 .footer__orbit { margin: 0; font: 400 var(--text-label)/1.6 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
 

@@ -1,4 +1,4 @@
-import type { ProjectStatus } from './projects';
+import { projects, type ProjectStatus, type Field } from './projects';
 
 // The star chart. Every project in projects.ts is a star; this file says where it sits, which
 // constellation it belongs to and what its planet looks like up close.
@@ -6,7 +6,7 @@ import type { ProjectStatus } from './projects';
 //   top left. The whole width is free: the bridge opens below it.
 // - `side`: which side of the star its name goes on.
 // - `planet`: the body drawn in its card. Omit it and one is derived from the id.
-// A project with no entry here still appears, at a spot derived from its id.
+// A project with no entry here still appears, near the centre of its field's constellation.
 
 export type PlanetKind = 'rocky' | 'gas';
 
@@ -35,23 +35,31 @@ export interface Constellation {
 }
 
 export const places: Record<string, Place> = {
-  vigia: { x: 50, y: 16, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
-  'zettelkasten-organizer': { x: 70, y: 30, side: 'right', planet: { kind: 'gas', tilt: -8 } },
-  'pnpm-hardening': { x: 84, y: 56, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
-  'omarchy-brutalistoic': { x: 10, y: 20, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
-  'hugo-theme-plano': { x: 24, y: 46, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 38, y: 74, side: 'right', planet: { kind: 'gas' } },
+  // Systemis
+  vigia: { x: 48, y: 22, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
+  // Automata
+  'zettelkasten-organizer': { x: 72, y: 32, side: 'right', planet: { kind: 'gas', tilt: -8 } },
+  'pnpm-hardening': { x: 84, y: 60, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
+  // Creavis
+  'omarchy-brutalistoic': { x: 10, y: 22, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
+  'hugo-theme-plano': { x: 24, y: 48, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
+  'music-for-work': { x: 12, y: 76, side: 'right', planet: { kind: 'gas' } },
 };
 
-/** Constellations are named after what their stars are, in the Latin of real star charts:
- *  Themata (themes), Automata (agent skills), Instrumenta (tools), Lyra (music: the real Lyra
- *  is the lyre). */
-export const constellations: Constellation[] = [
-  { name: 'Instrumenta', at: { x: 50, y: 7 }, members: ['vigia'] },
-  { name: 'Automata', at: { x: 72, y: 46 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
-  { name: 'Themata', at: { x: 11, y: 34 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
-  { name: 'Lyra', at: { x: 38, y: 84 }, members: ['music-for-work'] },
-];
+/** The three fixed constellations, one per `field` in projects.ts, named in the Latin of star
+ *  charts. Each has a centre (new stars without a place land around it) and a spot for its name.
+ *  Members come from projects.ts, joined in their catalog order. */
+export const fields: Record<Field, { name: string; center: { x: number; y: number }; at: { x: number; y: number } }> = {
+  automata: { name: 'Automata', center: { x: 78, y: 46 }, at: { x: 74, y: 50 } },
+  systemis: { name: 'Systemis', center: { x: 50, y: 30 }, at: { x: 48, y: 12 } },
+  creavis: { name: 'Creavis', center: { x: 16, y: 50 }, at: { x: 9, y: 36 } },
+};
+
+export const constellations: Constellation[] = (Object.keys(fields) as Field[]).map((f) => ({
+  name: fields[f].name,
+  at: fields[f].at,
+  members: projects.filter((p) => p.field === f).map((p) => p.id),
+}));
 
 /** The Einstein–Rosen bridge, drawn by cosmos.ts in the middle of the page, top to bottom:
  *  the grid is straight down to the bridge's zone (the gap between the upper space and the
@@ -70,8 +78,9 @@ function unit(id: string, salt = 0): number {
 
 export function placeOf(id: string): Required<Place> {
   const p = places[id];
-  const x = p?.x ?? Math.round(58 + unit(id, 1) * 34);
-  const y = p?.y ?? Math.round(8 + unit(id, 2) * 44);
+  const c = fields[projects.find((q) => q.id === id)?.field ?? 'systemis'].center;
+  const x = p?.x ?? Math.round(c.x + (unit(id, 1) - 0.5) * 20);
+  const y = p?.y ?? Math.round(c.y + (unit(id, 2) - 0.5) * 30);
   return {
     x,
     y,

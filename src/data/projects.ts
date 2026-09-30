@@ -6,8 +6,12 @@ import type { Localized } from '../i18n/ui';
 //   `github` (the repo), `demo` (a live page) or `more` (anywhere else with details).
 // - `status`: live (neutral badge with a dot) · wip (neutral badge) · soon (outline badge).
 //   Always a word, never colour alone: the site is black and white.
+// - `field`: which constellation the star joins on the chart. Fixed categories:
+//   automata (AI: agent skills, MCP servers, anything for models) · systemis (an application or a
+//   whole system someone uses) · creavis (artistic and creative work: themes, music, audiovisual).
 
 export type ProjectStatus = 'live' | 'wip' | 'soon';
+export type Field = 'automata' | 'systemis' | 'creavis';
 
 export interface ProjectLink {
   kind: 'demo' | 'github' | 'more';
@@ -21,6 +25,7 @@ export interface Project {
   description?: Localized;
   tags?: string;
   status: ProjectStatus;
+  field: Field;
   links: ProjectLink[];
 }
 
@@ -44,6 +49,7 @@ export const projects: Project[] = [
     },
     tags: 'twitch / jev',
     status: 'live',
+    field: 'systemis',
     links: [{ kind: 'demo', href: 'https://vstrofago.github.io/vigia/' }, { kind: 'github', href: 'https://github.com/vstrofago/vigia' }],
   },
   {
@@ -56,6 +62,7 @@ export const projects: Project[] = [
     },
     tags: 'obsidian / claude code',
     status: 'live',
+    field: 'automata',
     links: [{ kind: 'github', href: 'https://github.com/vstrofago/zettelkasten-organizer-skill' }],
   },
   {
@@ -68,6 +75,7 @@ export const projects: Project[] = [
     },
     tags: 'pnpm / security',
     status: 'live',
+    field: 'automata',
     links: [{ kind: 'github', href: 'https://github.com/vstrofago/pnpm-supply-chain-hardening-skill' }],
   },
   {
@@ -80,6 +88,7 @@ export const projects: Project[] = [
     },
     tags: 'hyprland / omarchy',
     status: 'live',
+    field: 'creavis',
     links: [{ kind: 'github', href: 'https://github.com/vstrofago/omarchy-brutalistoic-theme' }],
   },
   {
@@ -92,6 +101,7 @@ export const projects: Project[] = [
     },
     tags: 'hugo / css',
     status: 'live',
+    field: 'creavis',
     links: [{ kind: 'github', href: 'https://github.com/vstrofago/hugo-theme-plano' }],
   },
   {
@@ -101,6 +111,7 @@ export const projects: Project[] = [
     description: { en: 'Soundtracks for deep work.', es: 'Música para concentrarse.' },
     tags: '—',
     status: 'soon',
+    field: 'creavis',
     links: [{ kind: 'more', href: 'https://www.youtube.com/@robotvoices.mp3' }],
   },
 ];

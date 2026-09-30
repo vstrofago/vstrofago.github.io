@@ -2,15 +2,17 @@
 // The whole page is one plane (wide screens). A short welcome sits on it under the nav, with the
 // coordinate readout and the magnitudes just below; then the upper space: every project a
 // star, sized by magnitude (live bright, in progress pulsing, soon faint), joined into
-// constellations named after their category. Below it, in the middle of the page, the plane
+// the three fixed constellations of their field (Automata, Systemis, Creavis). Below it, in the middle of the page, the plane
 // sinks into a vertical Einstein–Rosen bridge (cosmos.ts draws the grid and the bridge to the
 // section's real size): the grid lines converge into a mouth, run down a wireframe throat and
-// flare out again into another space, where the outer spaces (the links in spaces.ts) sit.
+// flare out again into another space, where the outer spaces (the links in spaces.ts) sit, on
+// the straight grid, each flying its pixel ship.
 // Stars open their card (Fichas.astro); without JS they link to the Registro rows.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import Icon from './ds/Icon.astro';
+import Ship from './ds/Ship.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder } from '../data/projects';
 import { spaces } from '../data/spaces';
@@ -90,7 +92,7 @@ const outer = spaces.filter((s) => s.url);
       {outer.map((s) => (
         <li>
           <a class="outer__link" href={s.url} rel="noopener" data-hole-exit data-outer-exit>
-            <span class="outer__star" aria-hidden="true"><Mark size={11} /></span>
+            <Ship kind={s.ship} size={18} class="outer__ship" />
             <span class="outer__name">{s.name[lang]}</span>
             <span class="outer__handle">{s.handle}</span>
             <Icon name="arrow-up-right" size={14} />
