@@ -1,14 +1,18 @@
 ---
-// 00 Star chart: the page's one memorable moment, in place of a marketing hero. The sky is a
-// coordinate grid over a masked MarbleField (the nebula) and a field of faint stars. Every
-// project is a star, sized by magnitude (live bright, in progress pulsing, soon faint), joined
-// into constellations by hairlines. Each star is a link to its catalog row, so without JS the
-// chart is a table of contents; with JS it opens the body's card (Fichas.astro) instead.
+// 00 Star chart: the page's one memorable moment, in place of a marketing hero. A short
+// welcome sits under the nav; the sky follows at full width: a coordinate grid over a faint
+// nebula and a field of stars. Every project is a star, sized by magnitude (live bright, in
+// progress pulsing, soon faint), joined into constellations by hairlines. Each star links to
+// its catalog row, so without JS the chart is a table of contents; with JS it opens the
+// body's card (Fichas.astro). Bottom left, a black hole: the links in spaces.ts orbit it, as
+// ways out to other spaces.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder } from '../data/projects';
-import { constellations, placeOf, catalogId, coordsOf, magnitude } from '../data/sky';
+import Icon from './ds/Icon.astro';
+import { spaces } from '../data/spaces';
+import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitAngle } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -26,19 +30,26 @@ const lines = constellations.flatMap((c) =>
 const size = { live: 18, wip: 14, soon: 9 } as const;
 const ra = Array.from({ length: 11 }, (_, i) => (i + 1) * (100 / 12));
 const dec = Array.from({ length: 5 }, (_, i) => (i + 1) * (100 / 6));
+// Exits around the hole: a point on an ellipse just outside the disc, as % of the hole's box.
+const exits = spaces.filter((s) => s.url).map((s, i, all) => {
+  const a = (exitAngle(i, all.length) * Math.PI) / 180;
+  const x = 50 + Math.cos(a) * 52;
+  const y = 50 + Math.sin(a) * 34;
+  return { s, x: x.toFixed(1), y: y.toFixed(1), side: Math.cos(a) < -0.2 ? 'left' : Math.cos(a) > 0.2 ? 'right' : 'center' };
+});
 ---
 <section class="chart" aria-labelledby="chart-title" data-chart data-parallax>
-  <div class="chart__intro container">
-    <div class="chart__copy" data-reveal>
+  <div class="chart__intro container" data-reveal>
+    <div class="chart__head">
       <Label index="00">{t('chart.label')}</Label>
-      <h1 id="chart-title" class="display display--xl chart__title">{t('chart.title')}</h1>
-      <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
+      <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
     </div>
+    <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
   </div>
 
   <div class="chart__sky" data-sky>
     <div class="chart__field" data-parallax-layer aria-hidden="true">
-      <canvas class="marble-field chart__nebula" data-marble data-block-size="4" data-speed="0.6"></canvas>
+      <canvas class="chart__nebula" data-nebula data-block-size="4"></canvas>
       <canvas class="chart__stars-bg" data-starfield></canvas>
     </div>
 
@@ -75,6 +86,22 @@ const dec = Array.from({ length: 5 }, (_, i) => (i + 1) * (100 / 6));
         </li>
       ))}
     </ol>
+
+    <div class="hole" style={`--x:${hole.x};--y:${hole.y}`}>
+      <canvas class="hole__canvas" data-hole data-block-size="2" aria-hidden="true"></canvas>
+      <span class="hole__name" aria-hidden="true">{t('hole.name')}</span>
+      <ul class="hole__exits" aria-label={t('hole.links')}>
+        {exits.map(({ s, x, y, side }) => (
+          <li class={`hole__exit hole__exit--${side}`} style={`--ex:${x};--ey:${y}`}>
+            <a href={s.url} rel="noopener" data-hole-exit data-readout={`${t('hole.jump')} · ${s.handle}`}>
+              <span class="hole__dot" aria-hidden="true"></span>
+              <span>{s.name[lang]}</span>
+              <Icon name="arrow-up-right" size={12} />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
 
     <div class="chart__foot" aria-hidden="true">
       <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>

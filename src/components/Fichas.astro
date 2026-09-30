@@ -39,7 +39,6 @@ const planetLabel = { live: t('planet.live'), wip: t('planet.wip'), soon: t('pla
             data-moon={at.planet.moon ? '' : undefined}
             data-tilt={at.planet.tilt ?? 0}
             data-block-size="3"
-            data-spin
           ></canvas>
           <p class="ficha__caption">{planetLabel[p.status]}</p>
         </div>

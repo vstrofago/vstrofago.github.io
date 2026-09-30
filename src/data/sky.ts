@@ -2,8 +2,8 @@ import type { ProjectStatus } from './projects';
 
 // The star chart. Every project in projects.ts is a star; this file says where it sits, which
 // constellation it belongs to and what its planet looks like up close.
-// - `x` / `y`: position on the chart, 0–100 from the top left. Keep the left side quiet
-//   (x < 38): the headline lives there on wide screens.
+// - `x` / `y`: position on the chart, 0–100 from the top left. Keep the bottom left clear
+//   (x < 40 and y > 45): the black hole lives there.
 // - `side`: which side of the star its name goes on.
 // - `planet`: the body drawn in its card. Omit it and one is derived from the id.
 // A project with no entry here still appears, at a spot derived from its id.
@@ -35,20 +35,30 @@ export interface Constellation {
 }
 
 export const places: Record<string, Place> = {
-  vigia: { x: 72, y: 18, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
-  'zettelkasten-organizer': { x: 84, y: 40, side: 'left', planet: { kind: 'gas', tilt: -8 } },
-  'pnpm-hardening': { x: 90, y: 62, side: 'left', planet: { kind: 'rocky', tilt: 4 } },
-  'omarchy-brutalistoic': { x: 42, y: 20, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
-  'hugo-theme-plano': { x: 55, y: 38, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 66, y: 80, side: 'right', planet: { kind: 'gas' } },
+  vigia: { x: 62, y: 16, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
+  'zettelkasten-organizer': { x: 80, y: 34, side: 'left', planet: { kind: 'gas', tilt: -8 } },
+  'pnpm-hardening': { x: 88, y: 60, side: 'left', planet: { kind: 'rocky', tilt: 4 } },
+  'omarchy-brutalistoic': { x: 28, y: 18, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
+  'hugo-theme-plano': { x: 44, y: 36, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
+  'music-for-work': { x: 60, y: 76, side: 'right', planet: { kind: 'gas' } },
 };
 
 export const constellations: Constellation[] = [
-  { name: 'Lynx', at: { x: 72, y: 9 }, members: ['vigia'] },
-  { name: 'Norma', at: { x: 93, y: 49 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
-  { name: 'Pictor', at: { x: 42, y: 31 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
-  { name: 'Lyra', at: { x: 66, y: 90 }, members: ['music-for-work'] },
+  { name: 'Lynx', at: { x: 62, y: 7 }, members: ['vigia'] },
+  { name: 'Norma', at: { x: 92, y: 46 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
+  { name: 'Pictor', at: { x: 29, y: 31 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
+  { name: 'Lyra', at: { x: 60, y: 87 }, members: ['music-for-work'] },
 ];
+
+/** The black hole: its centre on the chart. The links in spaces.ts sit around it. */
+export const hole = { x: 23, y: 66 };
+
+/** Where the n-th of `count` links sits around the hole, in degrees (0 = right, 90 = below).
+ *  Up to five follow a hand-placed ring that keeps clear of the disc; more are spread evenly. */
+export function exitAngle(i: number, count: number): number {
+  const ring = [205, 335, 25, 155, 90];
+  return count <= ring.length ? ring[i] : (i * 360) / count - 90;
+}
 
 /** Small deterministic hash of a string, 0–1. */
 function unit(id: string, salt = 0): number {

@@ -146,7 +146,7 @@ function noise(x: number, y: number): number {
   const a = mhash(ix, iy), b = mhash(ix + 1, iy), c = mhash(ix, iy + 1), d = mhash(ix + 1, iy + 1);
   return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
 }
-function fbm(x: number, y: number, o: number): number {
+export function fbm(x: number, y: number, o: number): number {
   let v = 0, amp = 0.5, fr = 1, n = 0;
   for (let i = 0; i < o; i++) { v += amp * noise(x * fr, y * fr); n += amp; amp *= 0.5; fr *= 2.07; }
   return v / n;

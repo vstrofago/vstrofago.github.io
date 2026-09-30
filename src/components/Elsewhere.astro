@@ -1,5 +1,6 @@
 ---
-// 02 Elsewhere. Same split as the Catalog; each row is one link.
+// 02 Elsewhere: the black hole's exits in plain text, as the same terminal table as the
+// Catalog. One row per channel; a space without `url` shows without a link.
 import Label from './ds/Label.astro';
 import Icon from './ds/Icon.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
@@ -8,6 +9,8 @@ import { spaces } from '../data/spaces';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
+const channel = (i: number) => `CH ${String(i + 1).padStart(2, '0')}`;
+const count = String(spaces.length).padStart(2, '0');
 ---
 <section id="elsewhere" class="section section--tight-top" aria-labelledby="elsewhere-title">
   <div class="container split">
@@ -15,25 +18,39 @@ const t = useTranslations(lang);
       <div class="split__sticky">
         <Label index="02">{t('elsewhere.label')}</Label>
         <h2 id="elsewhere-title" class="heading heading--2">{t('elsewhere.title')}</h2>
+        <p class="text text--muted">{t('elsewhere.lead')}</p>
       </div>
     </div>
-    <ul class="rows">
-      {spaces.map((s) => (
-        <li>
-          {s.url ? (
-            <a class="space" href={s.url} rel="noopener">
-              <span class="space__name">{s.name[lang]}</span>
-              <span class="space__handle">{s.handle}</span>
-              <Icon name="arrow-up-right" class="space__arrow" />
-            </a>
-          ) : (
-            <div class="space">
-              <span class="space__name">{s.name[lang]}</span>
-              <span class="space__handle">{s.handle}</span>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div class="term">
+      <div class="term__bar" aria-hidden="true">
+        <span>{t('term.channels')}</span>
+        <span>{count} {t('term.records')}</span>
+      </div>
+      <table class="term__table term__table--channels">
+        <thead>
+          <tr>
+            <th scope="col">{t('table.channel')}</th>
+            <th scope="col">{t('table.dest')}</th>
+            <th scope="col">{t('table.address')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {spaces.map((s, i) => (
+            <tr>
+              <td class="term__id">{channel(i)}</td>
+              <th scope="row" class="term__body"><span class="term__name">{s.name[lang]}</span></th>
+              <td class="term__address">
+                {s.url ? (
+                  <a class="term__go" href={s.url} rel="noopener">{s.handle}<Icon name="arrow-up-right" size={12} /></a>
+                ) : (
+                  <span>{s.handle}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="term__end" aria-hidden="true">&gt; {t('term.end')}<span class="term__caret">_</span></p>
+    </div>
   </div>
 </section>

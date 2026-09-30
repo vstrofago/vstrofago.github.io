@@ -2,13 +2,15 @@
 // effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
 //
 //   [data-starfield]      faint deterministic stars behind the chart, a few of them twinkling
+//   canvas[data-nebula]   the chart's nebula: warped clouds and filaments, very slow
+//   canvas[data-hole]     the black hole the links orbit (accretion disc, lensed far side)
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
-import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
+import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash, fbm } from './stoico';
 import { coordsOf } from '../data/sky';
 
 /** Planets and the starfield tick like the ASCII banner: 70–90ms, never every frame. */
@@ -382,19 +384,196 @@ function initOrbitDay(): void {
   });
 }
 
+/* ---------------------------------------------------------------------------------------------
+   Nebula: slow clouds, not marble. Three layers of the system's fbm: one warps another (the
+   billow), a ridged pass draws thin filaments where the cloud is dense, and a soft,
+   noise-edged envelope keeps it a body in the sky rather than a texture. Time moves at a
+   fraction of the MarbleField's pace, and the whole thing breathes over about a minute.
+   Thresholded against the same Bayer matrix; kept very faint in site.css.
+   --------------------------------------------------------------------------------------------- */
+function attachNebula(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const block = Number(canvas.dataset.blockSize ?? 5);
+  let w = 0, h = 0, t = 17.3, visible = true, timer = 0;
+  let img: ImageData | null = null;
+  let rgb: [number, number, number] = [237, 237, 234];
+
+  const draw = (): void => {
+    if (!img) return;
+    const d = img.data, s = 0.009 * (block / 5) * (360 / Math.max(240, w)) * 1.4;
+    const breath = 0.9 + 0.1 * Math.sin(t * 0.9);
+    for (let y = 0; y < h; y++) {
+      const py = y * s, ey = (y / h - 0.42) / 0.55;
+      for (let x = 0; x < w; x++) {
+        const px = x * s;
+        const q0 = fbm(px + t * 0.6, py - t * 0.25, 3);
+        const q1 = fbm(px + 5.2 - t * 0.3, py + 1.3 + t * 0.4, 3);
+        const v = fbm(px + 3.2 * q0 + 1.7, py + 3.2 * q1 + 9.2, 4);
+        const ex = (x / w - 0.64) / 0.44;
+        const env = Math.max(0, Math.min(1, 1.3 - Math.sqrt(ex * ex + ey * ey) * (0.8 + 0.6 * q0)));
+        let val = 0;
+        if (env > 0) {
+          const cloud = Math.max(0, Math.min(1, (v - 0.4) / 0.34));
+          const ridge = 1 - Math.abs(2 * fbm(px * 2.3 + q1 * 2 + 3.1, py * 2.3 - q0 * 2 + t * 0.5, 3) - 1);
+          const fil = ridge ** 6;
+          // Mostly midtones: dense cloud stays a dither, never a solid block.
+          val = Math.min(0.78, env * breath * (0.55 * cloud * Math.sqrt(cloud) + 0.55 * fil * Math.sqrt(cloud)));
+        }
+        const on = val > (BAYER4[y & 3][x & 3] + 0.5) / 16, i = (y * w + x) * 4;
+        d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = on ? 255 : 0;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  const recolor = (): void => { rgb = toRGB(canvas.parentElement ?? document.body, getComputedStyle(canvas).color); };
+  const size = (): void => {
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;
+    w = Math.max(1, Math.ceil(cw / block));
+    h = Math.max(1, Math.ceil(ch / block));
+    canvas.width = w;
+    canvas.height = h;
+    img = ctx.createImageData(w, h);
+    recolor();
+    draw();
+  };
+  const run = (): void => {
+    window.clearInterval(timer);
+    if (reduced()) return;
+    timer = window.setInterval(() => {
+      if (!visible || document.hidden) return;
+      t += 0.0025;
+      draw();
+    }, 100);
+  };
+
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
+  watchVisibility(canvas, (v) => { visible = v; });
+  document.addEventListener('stoico:theme', () => { recolor(); draw(); });
+  reducedQuery()?.addEventListener?.('change', run);
+  size();
+  run();
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Black hole (an Einstein–Rosen bridge, for the links). A void, a thin photon ring, a tilted
+   accretion disc turning faster near the centre, and the disc's far side lensed into an arc
+   over and under the void, the way it bends around a real one. The approaching side is a
+   little brighter (Doppler beaming): brightness only, no colour. Pointing at an exit makes
+   the disc turn faster for a moment, as if it pulled.
+   --------------------------------------------------------------------------------------------- */
+function attachHole(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const block = Number(canvas.dataset.blockSize ?? 2);
+  const box = canvas.closest<HTMLElement>('.hole') ?? canvas;
+  const RH = 0.19, IN = 0.3, OUT = 0.96, FLAT = 0.2;
+  const tilt = (-7 * Math.PI) / 180, ct = Math.cos(tilt), st = Math.sin(tilt);
+  let w = 0, h = 0, spin = 0, pull = 0, pullTo = 0, visible = true, timer = 0;
+  let img: ImageData | null = null;
+  let fg: [number, number, number] = [237, 237, 234];
+  let bg: [number, number, number] = [11, 11, 10];
+  let ink = true;
+
+  const disc = (rr: number, ang: number): number => {
+    if (rr < IN || rr > OUT) return -1;
+    const b = Math.pow(1 - (rr - IN) / (OUT - IN), 1.3);
+    const a = ang + spin / (rr + 0.12);
+    const tex = noise3(Math.cos(a) * 1.3 + 11, Math.sin(a) * 1.3, rr * 11);
+    return b * (0.4 + 0.85 * tex);
+  };
+  const draw = (): void => {
+    if (!img) return;
+    const d = img.data, half = w / 2;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const u = (x + 0.5 - half) / half, v = (y + 0.5 - h / 2) / half;
+        const X = u * ct + v * st, Yr = -u * st + v * ct, Y = Yr / FLAT;
+        const rr = Math.sqrt(X * X + Y * Y);
+        const r2 = Math.sqrt(u * u + v * v);
+        let val = -1, voidPx = false, ringPx = false;
+
+        const flat = disc(rr, Math.atan2(Y, X));
+        const doppler = 1 + 0.4 * (-X / (rr || 1));
+        if (flat >= 0 && Yr > 0) {
+          val = flat * doppler; // the near side, in front of everything
+        } else if (r2 < RH) {
+          voidPx = true;
+        } else {
+          if (r2 < RH * 1.09) { val = 1; ringPx = true; } // photon ring
+          if (r2 >= RH * 1.12 && r2 < RH * 2.2) {
+            const th = Math.atan2(v, u);
+            const lensed = disc(IN + ((r2 - RH * 1.12) / (RH * 1.08)) * (OUT - IN) * 0.9, th * 2);
+            if (lensed >= 0) val = Math.max(val, lensed * 0.85 * Math.pow(Math.abs(Math.sin(th)), 0.55));
+          }
+          if (flat >= 0) val = Math.max(val, flat * doppler * 0.9); // the far side, behind
+        }
+        const i = (y * w + x) * 4;
+        if (voidPx) {
+          // The horizon is always dark: ground colour on ink, ink on paper.
+          const c = ink ? bg : fg;
+          d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+        } else if (ringPx && !ink) {
+          // On paper the ring is a thread of paper between the ink void and the ink disc.
+          d[i] = bg[0]; d[i + 1] = bg[1]; d[i + 2] = bg[2]; d[i + 3] = 255;
+        } else {
+          const on = val > (BAYER4[y & 3][x & 3] + 0.5) / 16;
+          d[i] = fg[0]; d[i + 1] = fg[1]; d[i + 2] = fg[2]; d[i + 3] = on ? 255 : 0;
+        }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  const recolor = (): void => {
+    fg = toRGB(box, getComputedStyle(canvas).color);
+    bg = toRGB(box, 'var(--bg)');
+    ink = bg[0] + bg[1] + bg[2] < 384;
+  };
+  const size = (): void => {
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;
+    w = Math.max(8, Math.round(cw / block));
+    h = Math.max(8, Math.round(ch / block));
+    canvas.width = w;
+    canvas.height = h;
+    img = ctx.createImageData(w, h);
+    recolor();
+    draw();
+  };
+  const run = (): void => {
+    window.clearInterval(timer);
+    if (reduced()) return;
+    timer = window.setInterval(() => {
+      if (!visible || document.hidden) return;
+      pull += (pullTo - pull) * 0.12;
+      spin += 0.012 * (1 + 5 * pull);
+      draw();
+    }, TICK);
+  };
+
+  box.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
+    const on = (): void => { pullTo = 1; };
+    const off = (): void => { pullTo = 0; };
+    a.addEventListener('pointerenter', on);
+    a.addEventListener('pointerleave', off);
+    a.addEventListener('focus', on);
+    a.addEventListener('blur', off);
+  });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
+  watchVisibility(canvas, (v) => { visible = v; });
+  document.addEventListener('stoico:theme', () => { recolor(); draw(); });
+  reducedQuery()?.addEventListener?.('change', run);
+  size();
+  run();
+}
+
 export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
-  document.querySelectorAll<HTMLCanvasElement>('canvas[data-planet]').forEach((c) => {
-    const control = attachPlanet(c);
-    planets.set(c, control);
-    // Catalog thumbnails turn while their row is hovered.
-    const row = c.closest<HTMLElement>('li');
-    if (row && !c.hasAttribute('data-spin')) {
-      row.addEventListener('pointerenter', () => control.play());
-      row.addEventListener('pointerleave', () => control.pause());
-    }
-  });
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-planet]').forEach((c) => planets.set(c, attachPlanet(c)));
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-nebula]').forEach(attachNebula);
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-hole]').forEach(attachHole);
   initReadout();
   initFichas(planets);
   initScreensaver();
