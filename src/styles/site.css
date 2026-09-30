@@ -156,21 +156,26 @@ body { margin: 0; min-height: 100vh; }
 .star--soon .star__name { color: var(--fg-subtle); }
 @keyframes star-breathe { 50% { opacity: 0.45; } }
 
-/* The black hole: the design system's ASCII animation in a box centred on --x / --y, on the
-   right of the sky. Its exits are small stars at --ex / --ey (% of the box); a ghost of each
-   falls into the void at --cx / --cy, along a curve (x and y ease differently). */
-.hole { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 1; width: clamp(460px, 58vw, 940px); transform: translate(-50%, -50%); }
-.hole__ascii { color: var(--fg); }
+/* The black hole: the design system's ASCII animation, --w % of the sky wide, placed so its
+   void (--cx / --cy, % of the box) lands on --x / --y of the sky, which is past the right
+   edge: the sky's overflow cuts it, and only the left half shows. The void is covered with
+   the ground colour so nothing (grain, stars, grid) shows through the hole. The trace is kept
+   thin (light weight, muted). Its exits sit on the rim (--ex / --ey, % of the box), names to
+   the left, under the "Other spaces" legend; a ghost of each falls into the void on a curve. */
+.hole { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 1; width: calc(var(--w) * 1%); transform: translate(calc(var(--cx) * -1%), calc(var(--cy) * -1%)); }
+.hole__void { position: absolute; left: calc(var(--cx) * 1%); top: calc(var(--cy) * 1%); width: calc(var(--vw) * 1%); height: calc(var(--vh) * 1%); transform: translate(-50%, -50%); border-radius: 50%; background: var(--bg); box-shadow: 0 0 18px 10px var(--bg); }
+.hole__ascii { color: var(--fg-muted); }
+.hole__ascii .ascii-anim__pre { font-weight: 100; }
 .hole__drifts { position: absolute; inset: 0; pointer-events: none; }
-.hole__drift { position: absolute; top: 0; bottom: 0; left: calc(var(--ex) * 1%); width: 0; animation: drift-x 5.2s cubic-bezier(0.55, 0, 1, 0.45) var(--delay) infinite both; }
-.hole__drift-y { position: absolute; left: 0; top: calc(var(--ey) * 1%); display: grid; transform: translate(-50%, -50%); animation: drift-y 5.2s cubic-bezier(0.2, 0.6, 0.35, 1) var(--delay) infinite both; }
+.hole__drift { position: absolute; top: 0; bottom: 0; left: calc(var(--ex) * 1%); width: 0; animation: drift-x 4.6s cubic-bezier(0.55, 0, 1, 0.45) var(--delay) infinite both; }
+.hole__drift-y { position: absolute; left: 0; top: calc(var(--ey) * 1%); display: grid; transform: translate(-50%, -50%); animation: drift-y 4.6s cubic-bezier(0.2, 0.6, 0.35, 1) var(--delay) infinite both; }
 .hole__drift .animation-mark { color: var(--fg); }
-@keyframes drift-x { 0%, 12% { left: calc(var(--ex) * 1%); } 100% { left: calc(var(--cx) * 1%); } }
-@keyframes drift-y { 0%, 12% { top: calc(var(--ey) * 1%); opacity: 0; } 20% { opacity: 0.8; } 85% { opacity: 0.5; } 100% { top: calc(var(--cy) * 1%); opacity: 0; transform: translate(-50%, -50%) scale(0.3); } }
+@keyframes drift-x { 0%, 10% { left: calc(var(--ex) * 1%); } 100% { left: calc(var(--cx) * 1%); } }
+@keyframes drift-y { 0%, 10% { top: calc(var(--ey) * 1%); opacity: 0; } 18% { opacity: 0.85; } 80% { opacity: 0.4; } 100% { top: calc(var(--cy) * 1%); opacity: 0; transform: translate(-50%, -50%) scale(0.2); } }
+.hole__legend { position: absolute; left: calc(var(--ex) * 1%); top: calc(var(--ey) * 1%); margin: 0; transform: translate(calc(-100% + 4px), -50%); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
 .hole__exits { list-style: none; margin: 0; padding: 0; }
 .hole__exit { position: absolute; left: calc(var(--ex) * 1%); top: calc(var(--ey) * 1%); width: 0; height: 0; }
-.hole__exit a { position: absolute; top: 0; left: 0; transform: translate(-7px, -50%); display: inline-flex; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
-.hole__exit--left a { transform: translate(calc(-100% + 7px), -50%); flex-direction: row-reverse; }
+.hole__exit a { position: absolute; top: 0; left: 0; transform: translate(calc(-100% + 11px), -50%); display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
 .stoico .hole__exit a { text-decoration: none; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
 .stoico .hole__exit a:hover, .stoico .hole__exit a:focus-visible { color: var(--fg); }
 .hole__star { display: grid; }
@@ -187,8 +192,8 @@ body { margin: 0; min-height: 100vh; }
 .ascii-anim__error[hidden] { display: none; }
 .ascii-anim.is-error .ascii-anim__pre { opacity: 0.25; }
 
-.chart__foot { position: absolute; right: var(--gutter); bottom: var(--space-7); z-index: 3; display: grid; justify-items: end; gap: var(--space-3); pointer-events: none; }
-.chart__readout { margin: 0; min-height: 1.4em; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; text-align: right; }
+.chart__foot { position: absolute; left: 50%; top: var(--space-8); transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: var(--space-3); pointer-events: none; }
+.chart__readout { margin: 0; min-height: 1.4em; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; }
 .chart__legend { display: flex; gap: var(--space-5); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
 .chart__legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .chart__legend .animation-mark { color: var(--fg); }
@@ -204,14 +209,11 @@ body { margin: 0; min-height: 100vh; }
   /* Narrow: the stars take the top two thirds, the hole sits centred below them. */
   .star, .chart__constellations li { top: calc(var(--y) * 0.64%); }
   .chart__grid { transform-origin: 0 0; transform: scaleY(0.64); }
-  .hole { left: 50%; top: 74%; width: 100%; }
+  .hole { top: 82%; width: 260%; }
   /* Keep constellation names off the left edge. */
   .chart__constellations li { left: max(calc(var(--x) * 1%), 36px); }
-  /* Narrow: every exit's name points inward, so none leaves the screen. */
-  .hole__exit--left a { transform: translate(-7px, -50%); flex-direction: row; }
-  .hole__exit--right a { transform: translate(calc(-100% + 7px), -50%); flex-direction: row-reverse; }
-  .chart__foot { left: var(--gutter); bottom: var(--space-5); justify-items: start; }
-  .chart__readout { text-align: left; }
+  /* The readout follows a pointer and the HUD names every status: narrow, the hole needs the room. */
+  .chart__foot { display: none; }
 }
 @media (max-width: 600px) {
   .star__name { display: none; }

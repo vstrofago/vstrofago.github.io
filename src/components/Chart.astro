@@ -5,8 +5,9 @@
 // progress pulsing, soon faint), joined into constellations by hairlines. Each star links to
 // its catalog row, so without JS the chart is a table of contents; with JS it opens the
 // body's card (Fichas.astro). On the right, the black hole: the design system's ASCII
-// animation (AsciiAnimation.astro). The links in spaces.ts sit around it as small stars, with
-// ghosts of themselves falling in: ways out, to other spaces.
+// animation (AsciiAnimation.astro), huge and cut by the edge, its void covered so nothing
+// shows through. The links in spaces.ts sit on its rim as small stars under "Other spaces",
+// with ghosts of themselves falling in.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
@@ -14,7 +15,7 @@ import { projects, placeholder } from '../data/projects';
 import Icon from './ds/Icon.astro';
 import { spaces } from '../data/spaces';
 import AsciiAnimation from './AsciiAnimation.astro';
-import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitSpot } from '../data/sky';
+import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitSpot, exitsLegend } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -84,18 +85,24 @@ const exits = spaces.filter((s) => s.url).map((s, i, all) => ({ s, ...exitSpot(i
       ))}
     </ol>
 
-    <div class="hole" style={`--x:${hole.x};--y:${hole.y};--cx:${hole.core.x};--cy:${hole.core.y}`} data-hole>
-      <AsciiAnimation name="hole" fps={12} errorText={t('hole.error')} class="hole__ascii" />
+    <div
+      class="hole"
+      style={`--x:${hole.x};--y:${hole.y};--w:${hole.width};--cx:${hole.core.x};--cy:${hole.core.y};--vw:${hole.core.w};--vh:${hole.core.h}`}
+      data-hole
+    >
+      <span class="hole__void" aria-hidden="true"></span>
+      <AsciiAnimation name="hole" quality="high" fps={12} errorText={t('hole.error')} class="hole__ascii" />
       <div class="hole__drifts" aria-hidden="true">
         {exits.map(({ x, y }, i) => (
-          <span class="hole__drift" style={`--ex:${x};--ey:${y};--delay:${(i * 1.7).toFixed(1)}s`}>
+          <span class="hole__drift" style={`--ex:${x};--ey:${y};--delay:${(i * 1.3).toFixed(1)}s`}>
             <span class="hole__drift-y"><Mark size={7} /></span>
           </span>
         ))}
       </div>
-      <ul class="hole__exits" aria-label={t('hole.links')}>
-        {exits.map(({ s, x, y, side }) => (
-          <li class={`hole__exit hole__exit--${side}`} style={`--ex:${x};--ey:${y}`}>
+      <p class="hole__legend" id="hole-legend" style={`--ex:${exitsLegend.x};--ey:${exitsLegend.y}`}>{t('hole.links')}</p>
+      <ul class="hole__exits" aria-labelledby="hole-legend">
+        {exits.map(({ s, x, y }) => (
+          <li class="hole__exit" style={`--ex:${x};--ey:${y}`}>
             <a href={s.url} rel="noopener" data-hole-exit data-readout={`${t('hole.jump')} · ${s.handle}`}>
               <span class="hole__star" aria-hidden="true"><Mark size={9} /></span>
               <span class="hole__name">{s.name[lang]}</span>

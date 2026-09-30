@@ -50,27 +50,30 @@ export const constellations: Constellation[] = [
   { name: 'Lyra', at: { x: 8, y: 95 }, members: ['music-for-work'] },
 ];
 
-/** The black hole (the design system's ASCII animation, public/ascii/hole): the centre of its
- *  box on the chart, and where its void sits inside that box (% of the box). */
-export const hole = { x: 66, y: 50, core: { x: 49, y: 37 } };
+/** The black hole (the design system's ASCII animation, public/ascii/hole), huge and cut by
+ *  the right edge of the sky, so only its left half shows (from about 18h).
+ *  - `x` / `y`: where the void's centre lands on the chart (%; past 100 is off the edge).
+ *  - `width`: the animation's width, as % of the sky's.
+ *  - `core`: the void inside the animation's box (% of the box): its centre and its size. It
+ *    is covered with the ground colour, so nothing behind shows through the hole. */
+export const hole = { x: 103, y: 50, width: 136, core: { x: 49.4, y: 39.8, w: 19, h: 13.5 } };
 
-/** The links in spaces.ts, as stars falling through the bridge: where each sits in the hole's
- *  box (% of the box; the drawing fills about 10–89% across and 22–68% down, so the
- *  exits keep to its margins) and which side its name goes on. More links than spots are
- *  spread on a ring. */
-const exitSpots: { x: number; y: number; side: 'left' | 'right' }[] = [
-  { x: 9, y: 46, side: 'left' },
-  { x: 27, y: 12, side: 'left' },
-  { x: 74, y: 10, side: 'right' },
-  { x: 95, y: 48, side: 'right' },
-  { x: 64, y: 86, side: 'right' },
+/** The links in spaces.ts, as stars being swallowed: points just outside the ring's left edge
+ *  (% of the animation's box), top to bottom along its curve; names go to the left. More links
+ *  than spots continue the curve downward. */
+const exitSpots: { x: number; y: number }[] = [
+  { x: 41, y: 21 },
+  { x: 35.5, y: 27 },
+  { x: 31.5, y: 32.5 },
+  { x: 29, y: 38.5 },
+  { x: 27.5, y: 44 },
 ];
-export function exitSpot(i: number, count: number): { x: number; y: number; side: 'left' | 'right' } {
-  if (count <= exitSpots.length) return exitSpots[i];
-  const a = (i / count) * Math.PI * 2 - Math.PI / 2;
-  const x = 50 + Math.cos(a) * 46;
-  return { x, y: 45 + Math.sin(a) * 42, side: x < 50 ? 'left' : 'right' };
+export function exitSpot(i: number, count: number): { x: number; y: number } {
+  if (i < exitSpots.length) return exitSpots[i];
+  return { x: 27, y: 44 + (i - exitSpots.length + 1) * 5 };
 }
+/** Where the "Other spaces" legend sits (% of the box), above the first exit. */
+export const exitsLegend = { x: 43, y: 14.5 };
 
 /** Small deterministic hash of a string, 0–1. */
 function unit(id: string, salt = 0): number {

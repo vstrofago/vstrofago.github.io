@@ -36,17 +36,22 @@ export function attachAsciiAnimation(box: HTMLElement): AsciiPlayer {
   let visible = false, started = false, failed = false, dead = false;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
 
-  /* Fit: measure one cell of the <pre>'s own font, then scale the grid to the box's width. */
+  /* Fit: measure one cell on the frame's own first line (a Range over the rendered text, divided
+     by the scale already applied), then scale the grid to the box's width. */
+  let scale = 1;
+  const cellWidth = (): number => {
+    const node = pre.firstChild;
+    const text = node?.nodeType === Node.TEXT_NODE ? node.textContent ?? '' : '';
+    const len = text.indexOf('\n') > 0 ? text.indexOf('\n') : text.length;
+    if (!node || len < 1) return 6;
+    const range = document.createRange();
+    range.setStart(node, 0);
+    range.setEnd(node, len);
+    return range.getBoundingClientRect().width / scale / len || 6;
+  };
   const fit = (): void => {
-    const probe = document.createElement('span');
-    probe.textContent = 'M'.repeat(20);
-    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;display:inline-block;';
-    pre.appendChild(probe);
-    // offsetWidth is layout size, untouched by the scale() already on the <pre>.
-    const cell = probe.offsetWidth / 20 || 6;
-    probe.remove();
-    const w = cols * cell, h = rows * 10;
-    const scale = box.clientWidth / w;
+    const w = cols * cellWidth(), h = rows * 10;
+    scale = box.clientWidth / w;
     pre.style.width = `${w}px`;
     pre.style.transform = `scale(${scale})`;
     box.style.height = `${h * scale}px`;
@@ -118,6 +123,10 @@ export function attachAsciiAnimation(box: HTMLElement): AsciiPlayer {
   if (io) io.observe(box); else { visible = true; start(); }
   reducedQuery()?.addEventListener?.('change', onReduced);
   fit();
+  // The first fit may run before the web font arrives (fallback cells are wider); fit again
+  // once fonts are ready, or the grid ends up narrower than its box.
+  document.fonts?.ready.then(() => { if (!dead) fit(); });
+  document.fonts?.addEventListener?.('loadingdone', fit);
 
   const destroy = (): void => {
     dead = true;
@@ -126,6 +135,7 @@ export function attachAsciiAnimation(box: HTMLElement): AsciiPlayer {
     ro?.disconnect();
     io?.disconnect();
     reducedQuery()?.removeEventListener?.('change', onReduced);
+    document.fonts?.removeEventListener?.('loadingdone', fit);
   };
   // Tear down when the page is really going away (not when it enters the back/forward cache).
   window.addEventListener('pagehide', (e) => { if (!e.persisted) destroy(); });
