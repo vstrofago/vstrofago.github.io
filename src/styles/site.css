@@ -101,34 +101,30 @@ body { margin: 0; min-height: 100vh; }
   .nav__links { display: none; }
 }
 
-/* ---------- Star chart (A02 Atmospheric: ink ground) ----------
-   A short welcome under the nav, then the sky at full width. The sky frames a darker grid
-   panel (the plot); its hour and declination marks sit outside it, in the margins, so they
-   read. Stars sit at --x / --y percent of the plot; the Einstein–Rosen bridge takes its right. */
-.chart { position: relative; }
-/* The welcome: centred, small, one line under it. */
-.chart__intro { display: grid; justify-items: center; gap: var(--space-4); padding-top: var(--space-8); padding-bottom: var(--space-7); text-align: center; }
+/* ---------- The plane (wide screens: the whole page is one plane) ----------
+   cosmos.ts draws the grid and the Einstein–Rosen bridge into svg[data-warp], across the
+   whole section; without JS a plain CSS grid stands in. Order down the page: the welcome,
+   the readout and magnitudes, the upper space (the stars), the bridge's zone in the middle,
+   the lower space (the outer spaces). */
+.cosmos { position: relative; overflow: hidden; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 12) calc(100vw / 12); }
+.cosmos.is-bridged { background-image: none; }
+.cosmos__field { position: absolute; inset: -16px; transition: transform 600ms var(--ease-out); }
+.cosmos__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
+.cosmos__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cosmos__warp path { fill: none; stroke-width: 1; }
+.cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-4); padding-top: var(--space-9); padding-bottom: var(--space-6); text-align: center; }
 .chart__head { display: grid; gap: var(--space-4); justify-items: center; }
 .chart__title { font-size: clamp(28px, 3vw, 44px); line-height: 1.1; letter-spacing: -0.01em; max-width: 24ch; }
 .chart__lead { max-width: 40ch; }
-
-.chart__sky { --plot-top: 32px; --plot-right: 16px; --plot-bottom: 48px; --plot-left: 52px; position: relative; height: clamp(600px, 86svh, 900px); border-top: 1px solid var(--border); }
-.chart__plot { position: absolute; top: var(--plot-top); right: var(--plot-right); bottom: var(--plot-bottom); left: var(--plot-left); overflow: hidden; background: var(--surface-sunken); border: 1px solid var(--border); }
-.chart__field { position: absolute; inset: -16px; transition: transform 600ms var(--ease-out); }
-.chart__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
+/* Readout and magnitudes: at the top, under the welcome. */
+.cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-3); pointer-events: none; }
+.cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-6) var(--gutter) 0; }
+.cosmos__bridge { height: clamp(460px, 64vh, 640px); }
+.cosmos__lower { scroll-margin-top: 48px; position: relative; z-index: 2; min-height: clamp(520px, 70vh, 720px); display: grid; align-content: start; justify-items: center; gap: var(--space-6); padding-top: var(--space-10); padding-bottom: var(--space-10); }
 
 .chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.chart__rule { stroke: var(--border-strong); stroke-width: 1; }
 .chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
-.is-bridged [data-grid-static] { display: none; }
-
-.chart__ticks, .chart__constellations, .chart__stars, .chart__legend { list-style: none; margin: 0; padding: 0; }
-/* Hour marks above the plot, declination marks to its left. */
-.chart__ticks { position: absolute; font: 400 10px/1 var(--font-mono); letter-spacing: var(--tr-label); color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
-.chart__ticks--ra { top: 0; left: var(--plot-left); right: var(--plot-right); height: var(--plot-top); }
-.chart__ticks--ra li { position: absolute; bottom: 10px; left: calc(var(--x) * 1%); transform: translateX(-50%); }
-.chart__ticks--dec { left: 0; width: calc(var(--plot-left) - 10px); top: var(--plot-top); bottom: var(--plot-bottom); }
-.chart__ticks--dec li { position: absolute; right: 0; top: calc(var(--y) * 1%); transform: translateY(-50%); }
+.chart__stars, .chart__legend, .chart__constellations { list-style: none; margin: 0; padding: 0; }
 .chart__constellations li { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); transform: translate(-50%, -50%); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
 
 /* A star: the glyph is centred on its point; the label hangs to one side. */
@@ -159,40 +155,38 @@ body { margin: 0; min-height: 100vh; }
 .star--soon .star__name { color: var(--fg-subtle); }
 @keyframes star-breathe { 50% { opacity: 0.45; } }
 
-/* The Einstein–Rosen bridge (drawn by cosmos.ts into svg[data-warp], in the plot's pixels):
-   the warped grid, the rings and spokes of both mouths, and the throat between them; the
-   throat's far side is fainter and dashed, and its meridians flow slowly along it (faster
-   while a link is pointed at). The links sit on the other side, names to the right, under the
-   legend; ghost stars ride offset-paths along a grid line, through the throat, out to each link. */
-.chart__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.chart__warp path { fill: none; stroke-width: 1; }
-.w-grid { stroke: var(--border-strong); }
+/* The bridge's lines: the grid faint, so the words on it read; the rims and throat a step up.
+   The throat's far side is dashed and fainter; its near meridians flow down the page, faster
+   while an outer space is pointed at. Ghost stars ride offset-paths into the lower space. */
+.w-grid { stroke: var(--border); }
 .w-edge { stroke: var(--border); }
-.w-ring, .w-spoke { stroke: var(--border-strong); }
-.w-rim { stroke: var(--fg-subtle); }
-.w-throat, .w-merid { stroke: var(--fg-subtle); }
+.w-ring { stroke: var(--border-strong); }
+.w-rim, .w-throat, .w-merid { stroke: var(--fg-subtle); }
 .w-throat--back { stroke: var(--border-strong); stroke-dasharray: 2 4; }
 .w-merid:not(.w-throat--back) { stroke-dasharray: 3 7; animation: bridge-flow 2.8s linear infinite; }
 .is-pulling .w-merid:not(.w-throat--back) { animation-duration: 0.8s; }
 @keyframes bridge-flow { to { stroke-dashoffset: -20; } }
+.w-label { fill: var(--fg-subtle); font: 400 10px var(--font-mono); letter-spacing: 0.08em; }
 
-.bridge__ghosts { position: absolute; inset: 0; pointer-events: none; }
-.chart__plot:not(.is-bridged) .bridge__ghosts { display: none; }
-.bridge__ghost { position: absolute; left: 0; top: 0; display: grid; offset-rotate: 0deg; offset-anchor: center; opacity: 0; animation: bridge-ghost 7.5s cubic-bezier(0.45, 0, 0.55, 1) var(--delay, 0s) infinite; }
+.bridge__ghosts { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.cosmos:not(.is-bridged) .bridge__ghosts { display: none; }
+.bridge__ghost { position: absolute; left: 0; top: 0; display: grid; offset-rotate: 0deg; offset-anchor: center; opacity: 0; animation: bridge-ghost 8s cubic-bezier(0.45, 0, 0.55, 1) var(--delay, 0s) infinite; }
 .bridge__ghost .animation-mark { color: var(--fg); }
-@keyframes bridge-ghost { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 0.8; } 38% { opacity: 0.25; } 62% { opacity: 0.25; } 92% { opacity: 0.8; } 100% { offset-distance: 100%; opacity: 0; } }
+@keyframes bridge-ghost { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 0.8; } 40% { opacity: 0.3; } 60% { opacity: 0.3; } 92% { opacity: 0.8; } 100% { offset-distance: 100%; opacity: 0; } }
 @supports not (offset-path: path("M0 0")) { .bridge__ghosts { display: none; } }
 
-.bridge__legend { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; margin: 0; transform: translate(-4px, -34px); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
-.bridge__exits { list-style: none; margin: 0; padding: 0; }
-.bridge__exit { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; width: 0; height: 0; }
-.bridge__exit a { position: absolute; top: 0; left: 0; transform: translate(-11px, -50%); display: inline-flex; flex-direction: row; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
-.stoico .bridge__exit a { text-decoration: none; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
-.stoico .bridge__exit a:hover, .stoico .bridge__exit a:focus-visible { color: var(--fg); }
-.bridge__star { display: grid; }
-.bridge__star .animation-mark { color: var(--fg); }
-.bridge__exit a .st-icon-svg { opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard); }
-.bridge__exit a:hover .st-icon-svg, .bridge__exit a:focus-visible .st-icon-svg { opacity: 1; }
+/* The lower space: the outer spaces, large enough to read, under their name. */
+.outer__legend { margin: 0; padding: 4px 10px; background: var(--bg); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); }
+.outer__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); justify-items: stretch; min-width: min(440px, 90vw); }
+.outer__link { display: grid; grid-template-columns: 14px auto minmax(0, 1fr) 14px; align-items: center; gap: var(--space-3); padding: 10px var(--space-4); border-radius: var(--radius-control); background: var(--bg); }
+.stoico a.outer__link { text-decoration: none; color: var(--fg); }
+.outer__star { display: grid; }
+.outer__star .animation-mark { color: var(--fg); }
+.outer__name { font: 500 16px/1.3 var(--font-sans); letter-spacing: -0.005em; }
+.outer__handle { font: 400 12px/1.4 var(--font-mono); color: var(--fg-subtle); justify-self: end; }
+.outer__link .st-icon-svg { color: var(--fg-subtle); transition: color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.outer__link:hover .st-icon-svg, .outer__link:focus-visible .st-icon-svg { color: var(--fg); transform: translate(2px, -2px); }
+.outer__link:hover .outer__handle, .outer__link:focus-visible .outer__handle { color: var(--fg-muted); }
 @media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } }
 
 /* ASCIIGen player (AsciiAnimation.astro + ascii.ts): the exported grid at 10px, line-height 1,
@@ -203,9 +197,7 @@ body { margin: 0; min-height: 100vh; }
 .ascii-anim__error[hidden] { display: none; }
 .ascii-anim.is-error .ascii-anim__pre { opacity: 0.25; }
 
-/* Readout and magnitudes: in the bottom margin, outside the plot. */
-.chart__foot { position: absolute; left: var(--plot-left); right: var(--plot-right); bottom: 0; height: var(--plot-bottom); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); pointer-events: none; }
-.chart__readout { margin: 0; min-height: 1.4em; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chart__readout { min-height: 1.4em; margin: 0; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .chart__legend { display: flex; gap: var(--space-5); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
 .chart__legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .chart__legend .animation-mark { color: var(--fg); }
@@ -214,17 +206,16 @@ body { margin: 0; min-height: 100vh; }
   .star--wip .animation-mark { animation: none; opacity: 0.75; }
   .star__glyph, .star__glyph::before { transition: none; }
 }
-@media (max-width: 860px) {
-  .chart__intro { padding-top: var(--space-7); padding-bottom: var(--space-6); }
-  .chart__sky { --plot-left: 44px; --plot-right: 8px; --plot-bottom: 16px; height: clamp(660px, 180vw, 900px); }
-  .chart__ticks--ra li:nth-child(even) { display: none; }
-  /* Narrow: the stars take the top two thirds, the bridge sits below them. */
-  .star, .chart__constellations li { top: calc(var(--y) * 0.6%); }
-  .chart__grid--lines { transform-origin: 0 0; transform: scaleY(0.6); }
-  /* Keep constellation names off the left edge. */
-  .chart__constellations li { left: max(calc(var(--x) * 1%), 40px); }
-  /* The readout follows a pointer and the HUD names every status: narrow, the bridge needs the room. */
-  .chart__foot { display: none; }
+/* Phones get the Registro, not the plane: only the welcome shows here. Wide screens (with JS)
+   get the plane, not the Registro; without JS both stay, so nothing is out of reach. */
+@media (max-width: 859px) {
+  .cosmos { background-image: none; }
+  .cosmos__field, .cosmos__warp, .cosmos__bar, .cosmos__upper, .cosmos__bridge, .cosmos__lower, .bridge__ghosts { display: none; }
+  .cosmos__intro { padding-top: var(--space-8); padding-bottom: 0; }
+  .cosmos__intro .st-label { display: none; }
+}
+@media (min-width: 860px) {
+  .js .hud-section { display: none; }
 }
 @media (max-width: 600px) {
   .star__name { display: none; }

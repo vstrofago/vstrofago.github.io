@@ -2,7 +2,7 @@
 // effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
 //
 //   [data-starfield]      faint fixed stars behind the chart; something unseen eats a few
-//   [data-bridge]         the Einstein–Rosen bridge: the grid warped into a wireframe throat
+//   [data-cosmos]         the page-wide plane: its grid, and the vertical Einstein–Rosen bridge
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
@@ -433,43 +433,48 @@ function initOrbitDay(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The Einstein–Rosen bridge. The grid (redrawn here to the plot's real size) runs straight up
-   to `start` (16h on wide screens); from there its lines converge, with a few rings, into a
-   mouth, run through a wireframe throat (an hourglass; its far side dashed and fainter), and
-   flare out again past a second mouth: the other side, where the links sit. The geometry is
-   written along the bridge's axis (a) and across it (b), so the same code draws it left to
-   right on wide screens and top to bottom on narrow ones. Ghost stars follow a grid line into
-   the mouth, through the throat, and out to each link (CSS offset-path); the throat's lines
-   flow slowly along it, faster while a link is pointed at. Without JS the plain grid stays.
+   The plane and its Einstein–Rosen bridge (wide screens). The whole section is one plane: its
+   grid (redrawn here to the section's real size, faint, cells a twelfth of the width) runs
+   straight down through the welcome and the upper space. In the bridge's zone, in the middle
+   of the page, the vertical lines converge with a few rings into a mouth, run down an
+   hourglass wireframe throat (far side dashed), and flare out past a second mouth into the
+   lower space, where the grid runs straight again: another space, holding the outer spaces.
+   Hour marks sit along the top, declination marks down the left of the upper space. Ghost
+   stars fall along a grid line, through the throat, to each outer space (CSS offset-path);
+   the throat's lines flow downward, faster while an outer space is pointed at.
+   Not drawn when the plane is hidden (phones use the Registro); without JS a plain CSS grid
+   shows instead.
    --------------------------------------------------------------------------------------------- */
 interface Pt { x: number; y: number }
-interface Axis { start: number; mouthA: number; mouthB: number; linksAt: number; radius: number }
-interface BridgeGeo { horizontal: Axis; vertical: Axis; tilt: number }
+interface BridgeGeo { mouthA: number; mouthB: number; flare: number; radius: number; maxRadius: number; tilt: number }
 
 function initBridge(): void {
-  const plot = document.querySelector<HTMLElement>('[data-bridge]');
-  const svg = plot?.querySelector<SVGSVGElement>('svg[data-warp]');
-  if (!plot || !svg) return;
+  const sec = document.querySelector<HTMLElement>('[data-cosmos]');
+  const svg = sec?.querySelector<SVGSVGElement>('svg[data-warp]');
+  const upper = sec?.querySelector<HTMLElement>('[data-sky]');
+  const zone = sec?.querySelector<HTMLElement>('[data-bridge-zone]');
+  const lower = sec?.querySelector<HTMLElement>('[data-outer]');
+  if (!sec || !svg || !upper || !zone || !lower) return;
   let geo: BridgeGeo;
-  try { geo = JSON.parse(plot.dataset.bridge ?? ''); } catch { return; }
-  const exits = Array.from(plot.querySelectorAll<HTMLElement>('[data-bridge-exit]'));
-  const legend = plot.querySelector<HTMLElement>('[data-bridge-legend]');
-  const ghosts = Array.from(plot.querySelectorAll<HTMLElement>('.bridge__ghost'));
+  try { geo = JSON.parse(sec.dataset.bridge ?? ''); } catch { return; }
+  const exits = Array.from(sec.querySelectorAll<HTMLElement>('[data-outer-exit]'));
+  const ghosts = Array.from(sec.querySelectorAll<HTMLElement>('.bridge__ghost'));
   const r1 = (n: number): string => n.toFixed(1);
   const ease = (t: number): number => { const c = Math.max(0, Math.min(1, t)); return c * c * (3 - 2 * c); };
+  const top = (el: HTMLElement): number => el.getBoundingClientRect().top - sec.getBoundingClientRect().top;
 
   const draw = (): void => {
-    const W = plot.clientWidth, H = plot.clientHeight;
-    if (!W || !H) return;
-    const vertical = window.innerWidth < 860;
-    const ax = vertical ? geo.vertical : geo.horizontal;
-    const L = vertical ? H : W, C = vertical ? W : H, mid = C / 2, R0 = C / 2;
-    const P = (a: number, b: number): Pt => (vertical ? { x: b, y: a } : { x: a, y: b });
-    const a0 = (ax.start / 100) * L, aA = (ax.mouthA / 100) * L, aB = (ax.mouthB / 100) * L, aL = (ax.linksAt / 100) * L;
-    const Rm = ax.radius * C, k = geo.tilt;
-    // Radius of the sheet: full before the start, narrowing into mouth A, flaring after mouth B.
+    if (getComputedStyle(upper).display === 'none') { sec.classList.remove('is-bridged'); return; }
+    const W = sec.clientWidth, S = sec.clientHeight;
+    if (!W || !S) return;
+    const cx = W / 2, R0 = W / 2, k = geo.tilt;
+    const Rm = Math.min(W * geo.radius, geo.maxRadius);
+    const a0 = top(zone), zh = zone.offsetHeight;
+    const aA = a0 + zh * geo.mouthA, aB = a0 + zh * geo.mouthB;
+    const lowTop = top(lower), aF = lowTop + lower.offsetHeight * geo.flare;
+    const cell = W / 12;
     const rIn = (a: number): number => Rm + (R0 - Rm) * (1 - ease((a - a0) / (aA - a0)));
-    const rOut = (a: number): number => Rm + (R0 * 0.96 - Rm) * ease(((a - aB) / (L - aB)) * 1.15);
+    const rOut = (a: number): number => Rm + (R0 - Rm) * ease((a - aB) / (aF - aB));
     const rThroat = (t: number): number => Rm * (0.38 + 0.62 * Math.pow(Math.abs(2 * t - 1), 1.6));
 
     const paths: string[] = [];
@@ -477,42 +482,35 @@ function initBridge(): void {
       if (pts.length < 2) return;
       paths.push(`<path class="${cls}" d="${pts.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}"/>`);
     };
-    // A ring across the sheet at a, cross radius r: the near half solid, the far half dashed.
     const ring = (a: number, r: number, cls: string): void => {
       const near: Pt[] = [], far: Pt[] = [];
       for (let i = 0; i <= 48; i++) {
-        const th = Math.PI / 2 + (i / 48) * Math.PI; // left half (toward the start)
-        near.push(P(a + Math.cos(th) * r * k, mid + Math.sin(th) * r));
-        far.push(P(a - Math.cos(th) * r * k, mid - Math.sin(th) * r));
+        const th = (i / 48) * Math.PI; // the half facing down the page is the near one
+        near.push({ x: cx + Math.cos(th) * r, y: a + Math.sin(th) * r * k });
+        far.push({ x: cx + Math.cos(th) * r, y: a - Math.sin(th) * r * k });
       }
       add(`${cls} w-throat--back`, far);
       add(cls, near);
     };
 
-    // Straight grid lines across the axis, up to the start.
-    const across = vertical ? 6 : 12;
-    for (let i = 1; i < across; i++) {
-      const a = (i / across) * L;
-      if (a > a0 + 0.5) break;
-      add('w-grid', [P(a, 0), P(a, C)]);
-    }
-    // Lines along the axis: straight, then converging into mouth A; and out of mouth B.
-    const along = vertical ? 12 : 6;
-    for (let j = 0; j <= along; j++) {
-      const f = (j / along) * 2 - 1; // -1 … 1 across
-      const inn: Pt[] = [P(0, mid + f * R0)];
+    // Horizontal lines: the upper plane down to the zone, the lower plane from the flare on.
+    for (let y = cell; y < a0 - 4; y += cell) add('w-grid', [{ x: 0, y }, { x: W, y }]);
+    for (let y = aF + cell * 0.5; y < S; y += cell) add('w-grid', [{ x: 0, y }, { x: W, y }]);
+    // Vertical lines: straight, converging into mouth A; out of mouth B, flaring, then straight.
+    for (let i = 0; i <= 12; i++) {
+      const f = (i / 12) * 2 - 1;
+      const down: Pt[] = [{ x: cx + f * R0, y: 0 }];
       const aEnd = aA - Rm * k * Math.sqrt(Math.max(0, 1 - f * f));
-      for (let a = a0; a <= aEnd; a += 3) inn.push(P(a, mid + f * rIn(a)));
-      inn.push(P(aEnd, mid + f * rIn(aEnd)));
-      add(j === 0 || j === along ? 'w-grid w-edge' : 'w-grid', inn);
+      for (let a = a0; a <= aEnd; a += 4) down.push({ x: cx + f * rIn(a), y: a });
+      down.push({ x: cx + f * rIn(aEnd), y: aEnd });
+      add(i === 0 || i === 12 ? 'w-grid w-edge' : 'w-grid', down);
       const out: Pt[] = [];
-      for (let a = aB + Rm * k * Math.sqrt(Math.max(0, 1 - f * f)); a <= L + 3; a += 3) out.push(P(a, mid + f * rOut(a)));
-      add('w-grid', out);
+      for (let a = aB + Rm * k * Math.sqrt(Math.max(0, 1 - f * f)); a <= aF; a += 4) out.push({ x: cx + f * rOut(a), y: a });
+      out.push({ x: cx + f * R0, y: S });
+      add(i === 0 || i === 12 ? 'w-grid w-edge' : 'w-grid', out);
     }
-    // Rings on the converging sheet and on the far one.
-    for (const t of [0.6, 0.82, 0.94]) { const a = a0 + (aA - a0) * t; ring(a, rIn(a), 'w-ring'); }
-    for (const t of [0.18, 0.42]) { const a = aB + (L - aB) * t; ring(a, rOut(a), 'w-ring'); }
-    // The two mouths and the throat between them.
+    for (const t of [0.55, 0.8, 0.94]) { const a = a0 + (aA - a0) * t; ring(a, rIn(a), 'w-ring'); }
+    for (const t of [0.12, 0.35, 0.65]) { const a = aB + (aF - aB) * t; ring(a, rOut(a), 'w-ring'); }
     ring(aA, Rm, 'w-rim');
     ring(aB, Rm, 'w-rim');
     for (let i = 1; i < 6; i++) { const t = i / 6; ring(aA + (aB - aA) * t, rThroat(t), 'w-throat'); }
@@ -520,54 +518,52 @@ function initBridge(): void {
       const th = (m / 14) * Math.PI * 2 + Math.PI / 28, pts: Pt[] = [];
       for (let i = 0; i <= 40; i++) {
         const t = i / 40, r = rThroat(t);
-        pts.push(P(aA + (aB - aA) * t + Math.cos(th) * r * k, mid + Math.sin(th) * r));
+        pts.push({ x: cx + Math.cos(th) * r, y: aA + (aB - aA) * t + Math.sin(th) * r * k });
       }
-      add(Math.cos(th) <= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
+      add(Math.sin(th) >= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
     }
 
-    svg.setAttribute('viewBox', `0 0 ${r1(W)} ${r1(H)}`);
-    svg.innerHTML = paths.join('');
-
-    // The links on the other side: a column right of mouth B (wide) or a stack below it (narrow).
-    const n = exits.length;
-    const spots = exits.map((_, i) => {
-      if (vertical) return P(aL + i * 30, mid - C * 0.16);
-      const step = Math.min(C * 0.075, (rOut(aL) * 1.5) / Math.max(1, n));
-      return P(aL, mid + (i - (n - 1) / 2) * step);
-    });
-    exits.forEach((li, i) => {
-      li.style.setProperty('--x', String((spots[i].x / W) * 100));
-      li.style.setProperty('--y', String((spots[i].y / H) * 100));
-    });
-    if (legend && spots[0]) {
-      legend.style.setProperty('--x', String((spots[0].x / W) * 100));
-      legend.style.setProperty('--y', String((spots[0].y / H) * 100));
+    // Coordinates: hours along the top, declinations down the left of the upper space.
+    const labels: string[] = [];
+    for (let i = 1; i < 12; i++) labels.push(`<text class="w-label" x="${r1(i * cell)}" y="18" text-anchor="middle">${String(i * 2).padStart(2, '0')}h</text>`);
+    const uTop = top(upper), uH = upper.offsetHeight;
+    for (let y = cell; y < a0 - 4; y += cell) {
+      const dec = Math.round(60 - ((y - uTop) / uH) * 120);
+      if (y < uTop - 8 || dec < -90 || dec > 90) continue;
+      labels.push(`<text class="w-label" x="8" y="${r1(y - 6)}">${dec > 0 ? '+' : dec < 0 ? '−' : ''}${Math.abs(dec)}°</text>`);
     }
-    // Ghosts: along a grid line, into the mouth, through the throat, out to a link.
+
+    svg.setAttribute('viewBox', `0 0 ${r1(W)} ${r1(S)}`);
+    svg.innerHTML = paths.join('') + labels.join('');
+
+    // Ghosts: down a grid line, into the mouth, through the throat, out to an outer space.
+    const secRect = sec.getBoundingClientRect();
     ghosts.forEach((el, i) => {
-      const to = spots[i];
-      if (!to) return;
-      const f = [-1, -2 / 3, -1 / 3, 1 / 3, 2 / 3, 1][i % 6];
-      const pts: Pt[] = [P(Math.max(0, a0 - L * 0.12), mid + f * R0)];
-      for (let a = a0; a <= aA; a += 6) pts.push(P(a, mid + f * rIn(a)));
-      pts.push(P(aA, mid), P(aB, mid));
-      const toA = vertical ? to.y : to.x, toB = vertical ? to.x : to.y;
-      for (let s = 1; s <= 12; s++) { const u = s / 12; pts.push(P(aB + (toA - aB) * u, mid + (toB - mid) * ease(u))); }
+      const star = exits[i]?.querySelector('.outer__star');
+      if (!star) return;
+      const r = star.getBoundingClientRect();
+      const to = { x: r.left + r.width / 2 - secRect.left, y: r.top + r.height / 2 - secRect.top };
+      const f = [-2 / 3, 2 / 3, -1 / 3, 1 / 3, -5 / 6, 5 / 6][i % 6];
+      const pts: Pt[] = [{ x: cx + f * R0, y: Math.max(0, a0 - 260) }];
+      for (let a = a0; a <= aA; a += 8) pts.push({ x: cx + f * rIn(a), y: a });
+      pts.push({ x: cx, y: aA }, { x: cx, y: aB });
+      for (let s = 1; s <= 14; s++) { const u = s / 14; pts.push({ x: cx + (to.x - cx) * ease(u), y: aB + (to.y - aB) * u }); }
       el.style.offsetPath = `path("${pts.map((p, j) => `${j ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}")`;
-      el.style.setProperty('--delay', `${(i * 1.6).toFixed(1)}s`);
+      el.style.setProperty('--delay', `${(i * 1.7).toFixed(1)}s`);
     });
-    plot.classList.add('is-bridged');
+    sec.classList.add('is-bridged');
   };
 
-  plot.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
-    const on = (): void => plot.classList.add('is-pulling');
-    const off = (): void => plot.classList.remove('is-pulling');
+  exits.forEach((a) => {
+    const on = (): void => sec.classList.add('is-pulling');
+    const off = (): void => sec.classList.remove('is-pulling');
     a.addEventListener('pointerenter', on);
     a.addEventListener('pointerleave', off);
     a.addEventListener('focus', on);
     a.addEventListener('blur', off);
   });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(plot);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(sec);
+  document.fonts?.ready.then(draw);
   draw();
 }
 
@@ -609,6 +605,13 @@ function initHud(): void {
     const target = document.getElementById(id);
     const k = panels.findIndex((p) => p && target && (p === target || p.contains(target)));
     if (k < 0) return;
+    // Wide screens show the plane, not the Registro: the projects are the upper space, the
+    // outer spaces the lower one.
+    if (hud.offsetParent === null) {
+      const alt = document.querySelector<HTMLElement>(k === 0 ? '[data-sky]' : '[data-outer]');
+      alt?.scrollIntoView({ block: k === 0 ? 'center' : 'start', behavior: reduced() ? 'auto' : 'smooth' });
+      return;
+    }
     select(k);
     // A tab's own hash (#hud-bodies, #hud-exits) lands on the whole log, title included; a row
     // hash lands on the row. Both clear the sticky nav (scroll-margin-top in site.css).

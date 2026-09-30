@@ -2,8 +2,8 @@ import type { ProjectStatus } from './projects';
 
 // The star chart. Every project in projects.ts is a star; this file says where it sits, which
 // constellation it belongs to and what its planet looks like up close.
-// - `x` / `y`: position on the chart's grid, 0–100 from its top left. Keep to the left
-//   (x < 56): the Einstein–Rosen bridge takes the right of the grid.
+// - `x` / `y`: position in the upper space (the stars' box under the welcome), 0–100 from its
+//   top left. The whole width is free: the bridge opens below it.
 // - `side`: which side of the star its name goes on.
 // - `planet`: the body drawn in its card. Omit it and one is derived from the id.
 // A project with no entry here still appears, at a spot derived from its id.
@@ -35,44 +35,31 @@ export interface Constellation {
 }
 
 export const places: Record<string, Place> = {
-  vigia: { x: 40, y: 16, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
-  'zettelkasten-organizer': { x: 10, y: 62, side: 'right', planet: { kind: 'gas', tilt: -8 } },
-  'pnpm-hardening': { x: 27, y: 78, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
-  'omarchy-brutalistoic': { x: 8, y: 16, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
-  'hugo-theme-plano': { x: 21, y: 36, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 44, y: 52, side: 'right', planet: { kind: 'gas' } },
+  vigia: { x: 50, y: 16, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
+  'zettelkasten-organizer': { x: 70, y: 30, side: 'right', planet: { kind: 'gas', tilt: -8 } },
+  'pnpm-hardening': { x: 84, y: 56, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
+  'omarchy-brutalistoic': { x: 10, y: 20, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
+  'hugo-theme-plano': { x: 24, y: 46, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
+  'music-for-work': { x: 38, y: 74, side: 'right', planet: { kind: 'gas' } },
 };
 
 /** Constellations are named after what their stars are, in the Latin of real star charts:
  *  Themata (themes), Automata (agent skills), Instrumenta (tools), Lyra (music: the real Lyra
  *  is the lyre). */
 export const constellations: Constellation[] = [
-  { name: 'Instrumenta', at: { x: 40, y: 8 }, members: ['vigia'] },
-  { name: 'Automata', at: { x: 9, y: 73 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
-  { name: 'Themata', at: { x: 8, y: 28 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
-  { name: 'Lyra', at: { x: 44, y: 60 }, members: ['music-for-work'] },
+  { name: 'Instrumenta', at: { x: 50, y: 7 }, members: ['vigia'] },
+  { name: 'Automata', at: { x: 72, y: 46 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
+  { name: 'Themata', at: { x: 11, y: 34 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
+  { name: 'Lyra', at: { x: 38, y: 84 }, members: ['music-for-work'] },
 ];
 
-/** The Einstein–Rosen bridge, drawn by cosmos.ts. The grid stays straight up to `start`
- *  (16h on wide screens), then its lines converge, with the bridge's own rings, into a first
- *  mouth (`mouthA`); a wireframe throat runs to a second mouth (`mouthB`); past it the lines
- *  flare out again: the other side, where the links sit (`linksAt`). All four are % along the
- *  bridge's axis: left to right on wide screens, top to bottom under 860px (`vertical`).
- *  `radius` is the mouths' radius as a fraction of the plot's cross size; `tilt` flattens the
- *  rings for perspective. */
-export interface BridgeAxis { start: number; mouthA: number; mouthB: number; linksAt: number; radius: number }
-export const bridge = {
-  horizontal: { start: 100 * (8 / 12), mouthA: 74, mouthB: 83, linksAt: 87, radius: 0.22 } as BridgeAxis,
-  vertical: { start: 62, mouthA: 68, mouthB: 74, linksAt: 79, radius: 0.24 } as BridgeAxis,
-  tilt: 0.3,
-};
-
-/** Where the i-th of n links sits on the far side, as % of the plot (no-JS / first paint;
- *  cosmos.ts places them again with the plot's real size). Wide: a column right of the far
- *  mouth, names to the right. */
-export function exitAt(i: number, n: number): { x: number; y: number } {
-  return { x: bridge.horizontal.linksAt, y: 50 + (i - (n - 1) / 2) * 7 };
-}
+/** The Einstein–Rosen bridge, drawn by cosmos.ts in the middle of the page, top to bottom:
+ *  the grid is straight down to the bridge's zone (the gap between the upper space and the
+ *  lower one), converges into a first mouth at `mouthA` of that zone, runs down a wireframe
+ *  throat to a second mouth at `mouthB`, and flares out again until `flare` of the lower space
+ *  (where the outer spaces sit), then runs straight on. `radius` is the mouths' radius as a
+ *  fraction of the page's width (at most `maxRadius` px); `tilt` flattens the rings. */
+export const bridge = { mouthA: 0.46, mouthB: 0.9, flare: 0.32, radius: 0.1, maxRadius: 150, tilt: 0.3 };
 
 /** Small deterministic hash of a string, 0–1. */
 function unit(id: string, salt = 0): number {
