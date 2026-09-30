@@ -156,21 +156,36 @@ body { margin: 0; min-height: 100vh; }
 .star--soon .star__name { color: var(--fg-subtle); }
 @keyframes star-breathe { 50% { opacity: 0.45; } }
 
-/* The black hole: a 4:3 box centred on --x / --y; its exits sit on an ellipse around the
-   disc (--ex / --ey, % of the box), labels pointing away from it. */
-.hole { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; width: clamp(280px, 29vw, 430px); aspect-ratio: 4 / 3; transform: translate(-50%, -50%); }
-.hole__canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; color: var(--fg); pointer-events: none; }
-.hole__name { position: absolute; left: 50%; top: 4%; transform: translateX(-50%); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
+/* The black hole: the design system's ASCII animation in a box centred on --x / --y, on the
+   right of the sky. Its exits are small stars at --ex / --ey (% of the box); a ghost of each
+   falls into the void at --cx / --cy, along a curve (x and y ease differently). */
+.hole { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 1; width: clamp(460px, 58vw, 940px); transform: translate(-50%, -50%); }
+.hole__ascii { color: var(--fg); }
+.hole__drifts { position: absolute; inset: 0; pointer-events: none; }
+.hole__drift { position: absolute; top: 0; bottom: 0; left: calc(var(--ex) * 1%); width: 0; animation: drift-x 5.2s cubic-bezier(0.55, 0, 1, 0.45) var(--delay) infinite both; }
+.hole__drift-y { position: absolute; left: 0; top: calc(var(--ey) * 1%); display: grid; transform: translate(-50%, -50%); animation: drift-y 5.2s cubic-bezier(0.2, 0.6, 0.35, 1) var(--delay) infinite both; }
+.hole__drift .animation-mark { color: var(--fg); }
+@keyframes drift-x { 0%, 12% { left: calc(var(--ex) * 1%); } 100% { left: calc(var(--cx) * 1%); } }
+@keyframes drift-y { 0%, 12% { top: calc(var(--ey) * 1%); opacity: 0; } 20% { opacity: 0.8; } 85% { opacity: 0.5; } 100% { top: calc(var(--cy) * 1%); opacity: 0; transform: translate(-50%, -50%) scale(0.3); } }
 .hole__exits { list-style: none; margin: 0; padding: 0; }
 .hole__exit { position: absolute; left: calc(var(--ex) * 1%); top: calc(var(--ey) * 1%); width: 0; height: 0; }
-.hole__exit a { position: absolute; top: 0; left: 0; transform: translate(0, -50%); display: inline-flex; align-items: center; gap: 6px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); white-space: nowrap; transition: color var(--dur-fast) var(--ease-standard); }
-.hole__exit--left a { transform: translate(-100%, -50%); flex-direction: row-reverse; }
-.hole__exit--center a { transform: translate(-50%, 0); }
-.stoico .hole__exit a { text-decoration: none; color: var(--fg-muted); }
+.hole__exit a { position: absolute; top: 0; left: 0; transform: translate(-7px, -50%); display: inline-flex; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
+.hole__exit--left a { transform: translate(calc(-100% + 7px), -50%); flex-direction: row-reverse; }
+.stoico .hole__exit a { text-decoration: none; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
 .stoico .hole__exit a:hover, .stoico .hole__exit a:focus-visible { color: var(--fg); }
-.hole__dot { width: 4px; height: 4px; background: currentColor; }
+.hole__star { display: grid; }
+.hole__star .animation-mark { color: var(--fg); }
 .hole__exit a .st-icon-svg { opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard); }
 .hole__exit a:hover .st-icon-svg, .hole__exit a:focus-visible .st-icon-svg { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .hole__drift, .hole__drift-y { animation: none; } .hole__drifts { display: none; } }
+
+/* ASCIIGen player (AsciiAnimation.astro + ascii.ts): the exported grid at 10px, line-height 1,
+   no letter-spacing, transparent, scaled to the box's width by the script. */
+.ascii-anim { position: relative; width: 100%; aspect-ratio: calc(var(--cols) * 0.6) / var(--rows); overflow: hidden; }
+.ascii-anim__pre { position: absolute; top: 0; left: 0; margin: 0; white-space: pre; font-family: var(--font-mono); font-size: 10px; line-height: 1; letter-spacing: 0; transform-origin: 0 0; user-select: none; pointer-events: none; }
+.ascii-anim__error { position: absolute; inset: 0; display: grid; place-items: center; font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); }
+.ascii-anim__error[hidden] { display: none; }
+.ascii-anim.is-error .ascii-anim__pre { opacity: 0.25; }
 
 .chart__foot { position: absolute; right: var(--gutter); bottom: var(--space-7); z-index: 3; display: grid; justify-items: end; gap: var(--space-3); pointer-events: none; }
 .chart__readout { margin: 0; min-height: 1.4em; font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.02em; color: var(--fg-muted); font-variant-numeric: tabular-nums; text-align: right; }
@@ -189,7 +204,12 @@ body { margin: 0; min-height: 100vh; }
   /* Narrow: the stars take the top two thirds, the hole sits centred below them. */
   .star, .chart__constellations li { top: calc(var(--y) * 0.64%); }
   .chart__grid { transform-origin: 0 0; transform: scaleY(0.64); }
-  .hole { left: 50%; top: 73%; width: 232px; }
+  .hole { left: 50%; top: 74%; width: 100%; }
+  /* Keep constellation names off the left edge. */
+  .chart__constellations li { left: max(calc(var(--x) * 1%), 36px); }
+  /* Narrow: every exit's name points inward, so none leaves the screen. */
+  .hole__exit--left a { transform: translate(-7px, -50%); flex-direction: row; }
+  .hole__exit--right a { transform: translate(calc(-100% + 7px), -50%); flex-direction: row-reverse; }
   .chart__foot { left: var(--gutter); bottom: var(--space-5); justify-items: start; }
   .chart__readout { text-align: left; }
 }

@@ -3,7 +3,7 @@
 //
 //   [data-starfield]      faint fixed stars behind the chart; something unseen eats a few
 //   canvas[data-nebula]   the chart's nebula: warped clouds and filaments, very slow
-//   canvas[data-hole]     the black hole the links orbit (accretion disc, lensed far side)
+//   [data-hole]           the black hole (ASCII, ascii.ts); faster while an exit is pointed at
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
@@ -13,6 +13,7 @@
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash, fbm } from './stoico';
 import { coordsOf } from '../data/sky';
+import { attachAsciiAnimation } from './ascii';
 
 /** Planets and the starfield tick like the ASCII banner: 70–90ms, never every frame. */
 const TICK = 80;
@@ -504,115 +505,22 @@ function attachNebula(canvas: HTMLCanvasElement): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Black hole (an Einstein–Rosen bridge, for the links). A void, a thin photon ring, a tilted
-   accretion disc turning faster near the centre, and the disc's far side lensed into an arc
-   over and under the void, the way it bends around a real one. The approaching side is a
-   little brighter (Doppler beaming): brightness only, no colour. Pointing at an exit makes
-   the disc turn faster for a moment, as if it pulled.
+   The black hole: the design system's ASCII animation (ascii.ts plays it). Pointing at an exit,
+   or focusing one, makes it turn faster for as long as you stay, as if it pulled.
    --------------------------------------------------------------------------------------------- */
-function attachHole(canvas: HTMLCanvasElement): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const block = Number(canvas.dataset.blockSize ?? 2);
-  const box = canvas.closest<HTMLElement>('.hole') ?? canvas;
-  const RH = 0.19, IN = 0.3, OUT = 0.96, FLAT = 0.2;
-  const tilt = (-7 * Math.PI) / 180, ct = Math.cos(tilt), st = Math.sin(tilt);
-  let w = 0, h = 0, spin = 0, pull = 0, pullTo = 0, visible = true, timer = 0;
-  let img: ImageData | null = null;
-  let fg: [number, number, number] = [237, 237, 234];
-  let bg: [number, number, number] = [11, 11, 10];
-  let ink = true;
-
-  const disc = (rr: number, ang: number): number => {
-    if (rr < IN || rr > OUT) return -1;
-    const b = Math.pow(1 - (rr - IN) / (OUT - IN), 1.3);
-    const a = ang + spin / (rr + 0.12);
-    const tex = noise3(Math.cos(a) * 1.3 + 11, Math.sin(a) * 1.3, rr * 11);
-    return b * (0.4 + 0.85 * tex);
-  };
-  const draw = (): void => {
-    if (!img) return;
-    const d = img.data, half = w / 2;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const u = (x + 0.5 - half) / half, v = (y + 0.5 - h / 2) / half;
-        const X = u * ct + v * st, Yr = -u * st + v * ct, Y = Yr / FLAT;
-        const rr = Math.sqrt(X * X + Y * Y);
-        const r2 = Math.sqrt(u * u + v * v);
-        let val = -1, voidPx = false, ringPx = false;
-
-        const flat = disc(rr, Math.atan2(Y, X));
-        const doppler = 1 + 0.4 * (-X / (rr || 1));
-        if (flat >= 0 && Yr > 0) {
-          val = flat * doppler; // the near side, in front of everything
-        } else if (r2 < RH) {
-          voidPx = true;
-        } else {
-          if (r2 < RH * 1.09) { val = 1; ringPx = true; } // photon ring
-          if (r2 >= RH * 1.12 && r2 < RH * 2.2) {
-            const th = Math.atan2(v, u);
-            const lensed = disc(IN + ((r2 - RH * 1.12) / (RH * 1.08)) * (OUT - IN) * 0.9, th * 2);
-            if (lensed >= 0) val = Math.max(val, lensed * 0.85 * Math.pow(Math.abs(Math.sin(th)), 0.55));
-          }
-          if (flat >= 0) val = Math.max(val, flat * doppler * 0.9); // the far side, behind
-        }
-        const i = (y * w + x) * 4;
-        if (voidPx) {
-          // The horizon is always dark: ground colour on ink, ink on paper.
-          const c = ink ? bg : fg;
-          d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
-        } else if (ringPx && !ink) {
-          // On paper the ring is a thread of paper between the ink void and the ink disc.
-          d[i] = bg[0]; d[i + 1] = bg[1]; d[i + 2] = bg[2]; d[i + 3] = 255;
-        } else {
-          const on = val > (BAYER4[y & 3][x & 3] + 0.5) / 16;
-          d[i] = fg[0]; d[i + 1] = fg[1]; d[i + 2] = fg[2]; d[i + 3] = on ? 255 : 0;
-        }
-      }
-    }
-    ctx.putImageData(img, 0, 0);
-  };
-  const recolor = (): void => {
-    fg = toRGB(box, getComputedStyle(canvas).color);
-    bg = toRGB(box, 'var(--bg)');
-    ink = bg[0] + bg[1] + bg[2] < 384;
-  };
-  const size = (): void => {
-    const cw = canvas.clientWidth, ch = canvas.clientHeight;
-    if (!cw || !ch) return;
-    w = Math.max(8, Math.round(cw / block));
-    h = Math.max(8, Math.round(ch / block));
-    canvas.width = w;
-    canvas.height = h;
-    img = ctx.createImageData(w, h);
-    recolor();
-    draw();
-  };
-  const run = (): void => {
-    window.clearInterval(timer);
-    if (reduced()) return;
-    timer = window.setInterval(() => {
-      if (!visible || document.hidden) return;
-      pull += (pullTo - pull) * 0.12;
-      spin += 0.012 * (1 + 5 * pull);
-      draw();
-    }, TICK);
-  };
-
-  box.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
-    const on = (): void => { pullTo = 1; };
-    const off = (): void => { pullTo = 0; };
-    a.addEventListener('pointerenter', on);
-    a.addEventListener('pointerleave', off);
-    a.addEventListener('focus', on);
-    a.addEventListener('blur', off);
+function initHole(): void {
+  document.querySelectorAll<HTMLElement>('[data-ascii-anim]').forEach((box) => {
+    const player = attachAsciiAnimation(box);
+    const hole = box.closest<HTMLElement>('[data-hole]');
+    hole?.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
+      const on = (): void => player.setRate(2.2);
+      const off = (): void => player.setRate(1);
+      a.addEventListener('pointerenter', on);
+      a.addEventListener('pointerleave', off);
+      a.addEventListener('focus', on);
+      a.addEventListener('blur', off);
+    });
   });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
-  watchVisibility(canvas, (v) => { visible = v; });
-  document.addEventListener('stoico:theme', () => { recolor(); draw(); });
-  reducedQuery()?.addEventListener?.('change', run);
-  size();
-  run();
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -668,7 +576,7 @@ export function initCosmos(): void {
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-planet]').forEach((c) => planets.set(c, attachPlanet(c)));
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-nebula]').forEach(attachNebula);
-  document.querySelectorAll<HTMLCanvasElement>('canvas[data-hole]').forEach(attachHole);
+  initHole();
   initReadout();
   initHud();
   initFichas(planets);

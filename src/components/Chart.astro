@@ -4,15 +4,17 @@
 // nebula and a field of stars. Every project is a star, sized by magnitude (live bright, in
 // progress pulsing, soon faint), joined into constellations by hairlines. Each star links to
 // its catalog row, so without JS the chart is a table of contents; with JS it opens the
-// body's card (Fichas.astro). Bottom left, a black hole: the links in spaces.ts orbit it, as
-// ways out to other spaces.
+// body's card (Fichas.astro). On the right, the black hole: the design system's ASCII
+// animation (AsciiAnimation.astro). The links in spaces.ts sit around it as small stars, with
+// ghosts of themselves falling in: ways out, to other spaces.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder } from '../data/projects';
 import Icon from './ds/Icon.astro';
 import { spaces } from '../data/spaces';
-import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitAngle } from '../data/sky';
+import AsciiAnimation from './AsciiAnimation.astro';
+import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitSpot } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -30,13 +32,8 @@ const lines = constellations.flatMap((c) =>
 const size = { live: 18, wip: 14, soon: 9 } as const;
 const ra = Array.from({ length: 11 }, (_, i) => (i + 1) * (100 / 12));
 const dec = Array.from({ length: 5 }, (_, i) => (i + 1) * (100 / 6));
-// Exits around the hole: a point on an ellipse just outside the disc, as % of the hole's box.
-const exits = spaces.filter((s) => s.url).map((s, i, all) => {
-  const a = (exitAngle(i, all.length) * Math.PI) / 180;
-  const x = 50 + Math.cos(a) * 52;
-  const y = 50 + Math.sin(a) * 34;
-  return { s, x: x.toFixed(1), y: y.toFixed(1), side: Math.cos(a) < -0.2 ? 'left' : Math.cos(a) > 0.2 ? 'right' : 'center' };
-});
+// Exits: the links, placed in the hole's box (% of the box).
+const exits = spaces.filter((s) => s.url).map((s, i, all) => ({ s, ...exitSpot(i, all.length) }));
 ---
 <section class="chart" aria-labelledby="chart-title" data-chart data-parallax>
   <div class="chart__intro container" data-reveal>
@@ -87,14 +84,21 @@ const exits = spaces.filter((s) => s.url).map((s, i, all) => {
       ))}
     </ol>
 
-    <div class="hole" style={`--x:${hole.x};--y:${hole.y}`}>
-      <canvas class="hole__canvas" data-hole data-block-size="2" aria-hidden="true"></canvas>
+    <div class="hole" style={`--x:${hole.x};--y:${hole.y};--cx:${hole.core.x};--cy:${hole.core.y}`} data-hole>
+      <AsciiAnimation name="hole" fps={12} errorText={t('hole.error')} class="hole__ascii" />
+      <div class="hole__drifts" aria-hidden="true">
+        {exits.map(({ x, y }, i) => (
+          <span class="hole__drift" style={`--ex:${x};--ey:${y};--delay:${(i * 1.7).toFixed(1)}s`}>
+            <span class="hole__drift-y"><Mark size={7} /></span>
+          </span>
+        ))}
+      </div>
       <ul class="hole__exits" aria-label={t('hole.links')}>
         {exits.map(({ s, x, y, side }) => (
           <li class={`hole__exit hole__exit--${side}`} style={`--ex:${x};--ey:${y}`}>
             <a href={s.url} rel="noopener" data-hole-exit data-readout={`${t('hole.jump')} · ${s.handle}`}>
-              <span class="hole__dot" aria-hidden="true"></span>
-              <span>{s.name[lang]}</span>
+              <span class="hole__star" aria-hidden="true"><Mark size={9} /></span>
+              <span class="hole__name">{s.name[lang]}</span>
               <Icon name="arrow-up-right" size={12} />
             </a>
           </li>

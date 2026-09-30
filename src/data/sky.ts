@@ -2,8 +2,8 @@ import type { ProjectStatus } from './projects';
 
 // The star chart. Every project in projects.ts is a star; this file says where it sits, which
 // constellation it belongs to and what its planet looks like up close.
-// - `x` / `y`: position on the chart, 0–100 from the top left. Keep the bottom left clear
-//   (x < 40 and y > 45): the black hole lives there.
+// - `x` / `y`: position on the chart, 0–100 from the top left. Keep to the left (x < 38):
+//   the black hole takes the right of the sky.
 // - `side`: which side of the star its name goes on.
 // - `planet`: the body drawn in its card. Omit it and one is derived from the id.
 // A project with no entry here still appears, at a spot derived from its id.
@@ -35,29 +35,41 @@ export interface Constellation {
 }
 
 export const places: Record<string, Place> = {
-  vigia: { x: 62, y: 16, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
-  'zettelkasten-organizer': { x: 80, y: 34, side: 'left', planet: { kind: 'gas', tilt: -8 } },
-  'pnpm-hardening': { x: 88, y: 60, side: 'left', planet: { kind: 'rocky', tilt: 4 } },
-  'omarchy-brutalistoic': { x: 28, y: 18, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
-  'hugo-theme-plano': { x: 44, y: 36, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
-  'music-for-work': { x: 60, y: 76, side: 'right', planet: { kind: 'gas' } },
+  vigia: { x: 29, y: 12, side: 'right', planet: { kind: 'rocky', moon: true, tilt: 12 } },
+  'zettelkasten-organizer': { x: 9, y: 56, side: 'right', planet: { kind: 'gas', tilt: -8 } },
+  'pnpm-hardening': { x: 22, y: 72, side: 'right', planet: { kind: 'rocky', tilt: 4 } },
+  'omarchy-brutalistoic': { x: 6, y: 20, side: 'right', planet: { kind: 'rocky', ring: true, tilt: -18 } },
+  'hugo-theme-plano': { x: 18, y: 36, side: 'right', planet: { kind: 'gas', ring: true, tilt: 22 } },
+  'music-for-work': { x: 8, y: 88, side: 'right', planet: { kind: 'gas' } },
 };
 
 export const constellations: Constellation[] = [
-  { name: 'Lynx', at: { x: 62, y: 7 }, members: ['vigia'] },
-  { name: 'Norma', at: { x: 92, y: 46 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
-  { name: 'Pictor', at: { x: 29, y: 31 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
-  { name: 'Lyra', at: { x: 60, y: 87 }, members: ['music-for-work'] },
+  { name: 'Lynx', at: { x: 29, y: 5 }, members: ['vigia'] },
+  { name: 'Norma', at: { x: 7, y: 66 }, members: ['zettelkasten-organizer', 'pnpm-hardening'] },
+  { name: 'Pictor', at: { x: 6, y: 30 }, members: ['omarchy-brutalistoic', 'hugo-theme-plano'] },
+  { name: 'Lyra', at: { x: 8, y: 95 }, members: ['music-for-work'] },
 ];
 
-/** The black hole: its centre on the chart. The links in spaces.ts sit around it. */
-export const hole = { x: 23, y: 66 };
+/** The black hole (the design system's ASCII animation, public/ascii/hole): the centre of its
+ *  box on the chart, and where its void sits inside that box (% of the box). */
+export const hole = { x: 66, y: 50, core: { x: 49, y: 37 } };
 
-/** Where the n-th of `count` links sits around the hole, in degrees (0 = right, 90 = below).
- *  Up to five follow a hand-placed ring that keeps clear of the disc; more are spread evenly. */
-export function exitAngle(i: number, count: number): number {
-  const ring = [205, 335, 25, 155, 90];
-  return count <= ring.length ? ring[i] : (i * 360) / count - 90;
+/** The links in spaces.ts, as stars falling through the bridge: where each sits in the hole's
+ *  box (% of the box; the drawing fills about 10–89% across and 22–68% down, so the
+ *  exits keep to its margins) and which side its name goes on. More links than spots are
+ *  spread on a ring. */
+const exitSpots: { x: number; y: number; side: 'left' | 'right' }[] = [
+  { x: 9, y: 46, side: 'left' },
+  { x: 27, y: 12, side: 'left' },
+  { x: 74, y: 10, side: 'right' },
+  { x: 95, y: 48, side: 'right' },
+  { x: 64, y: 86, side: 'right' },
+];
+export function exitSpot(i: number, count: number): { x: number; y: number; side: 'left' | 'right' } {
+  if (count <= exitSpots.length) return exitSpots[i];
+  const a = (i / count) * Math.PI * 2 - Math.PI / 2;
+  const x = 50 + Math.cos(a) * 46;
+  return { x, y: 45 + Math.sin(a) * 42, side: x < 50 ? 'left' : 'right' };
 }
 
 /** Small deterministic hash of a string, 0–1. */

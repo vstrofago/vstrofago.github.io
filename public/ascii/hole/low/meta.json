@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "format": "mono-ascii-v3",
+  "renderMode": "ascii",
+  "colorMode": "mono",
+  "frameEncoding": "utf8",
+  "width": 100,
+  "height": 38,
+  "fps": 20,
+  "frameCount": 21,
+  "bgMode": "transparent",
+  "dithering": "off",
+  "fpsSource": "default"
+}
