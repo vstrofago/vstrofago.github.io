@@ -2,8 +2,7 @@
 // effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
 //
 //   [data-starfield]      faint fixed stars behind the chart; something unseen eats a few
-//   canvas[data-nebula]   the chart's nebula: warped clouds and filaments, very slow
-//   [data-hole]           the black hole (ASCII, ascii.ts); faster while an exit is pointed at
+//   [data-bridge]         the Einstein–Rosen bridge: the grid warped into a wireframe throat
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
@@ -11,9 +10,8 @@
 //   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
-import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash, fbm } from './stoico';
+import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
 import { coordsOf } from '../data/sky';
-import { attachAsciiAnimation } from './ascii';
 
 /** Planets and the starfield tick like the ASCII banner: 70–90ms, never every frame. */
 const TICK = 80;
@@ -363,7 +361,6 @@ function initFichas(planets: Map<HTMLCanvasElement, PlanetControl>): void {
     e.preventDefault();
     open(key);
   });
-  document.querySelectorAll<HTMLElement>('[data-closer]').forEach((li) => { li.hidden = false; });
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -436,91 +433,151 @@ function initOrbitDay(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Nebula: a slow, faint texture behind the sky. Three layers of the system's fbm, one warping
-   another (the billow), with a ridged pass for thin filaments. Spread evenly and capped to a
-   sparse dither, so it reads as grain that drifts, never as a grey shape. Time moves at a
-   fraction of the MarbleField's pace and the whole field breathes over about a minute.
+   The Einstein–Rosen bridge. The grid (drawn here, to the plot's real size) sinks into a mouth:
+   near it, points are pulled toward the rim and dragged down, so the grid lines, a few rings
+   and spokes curve into the funnel. From the mouth a wireframe throat narrows and widens
+   again (an hourglass; its far side is fainter and dashed) down to a second mouth, whose plane
+   flares the other way: the other side, where the links sit. Ghost stars fall into the first
+   mouth, down the throat, and out to each link (CSS offset-path). The throat's lines flow
+   slowly downward, faster while a link is pointed at. Without JS the plain grid stays.
    --------------------------------------------------------------------------------------------- */
-function attachNebula(canvas: HTMLCanvasElement): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const block = Number(canvas.dataset.blockSize ?? 5);
-  let w = 0, h = 0, t = 17.3, visible = true, timer = 0;
-  let img: ImageData | null = null;
-  let rgb: [number, number, number] = [237, 237, 234];
-
-  const draw = (): void => {
-    if (!img) return;
-    const d = img.data, s = 0.009 * (block / 5) * (360 / Math.max(240, w)) * 1.4;
-    const breath = 0.85 + 0.15 * Math.sin(t * 0.9);
-    for (let y = 0; y < h; y++) {
-      const py = y * s;
-      for (let x = 0; x < w; x++) {
-        const px = x * s;
-        const q0 = fbm(px + t * 0.6, py - t * 0.25, 3);
-        const q1 = fbm(px + 5.2 - t * 0.3, py + 1.3 + t * 0.4, 3);
-        const v = fbm(px + 3.2 * q0 + 1.7, py + 3.2 * q1 + 9.2, 4);
-        // A texture, not a body: spread evenly, and capped so even the densest cloud stays a
-        // sparse dither (at most ~3 dots in 16), never a patch of light grey.
-        const cloud = Math.max(0, Math.min(1, (v - 0.36) / 0.4));
-        const ridge = 1 - Math.abs(2 * fbm(px * 2.3 + q1 * 2 + 3.1, py * 2.3 - q0 * 2 + t * 0.5, 3) - 1);
-        const val = Math.min(0.22, breath * (0.18 * cloud + 0.12 * ridge ** 6 * cloud));
-        // Half Bayer, half fixed per-cell noise: at these low densities pure Bayer is a
-        // regular lattice (a screen door); the mix keeps it grain.
-        const thr = 0.5 * (BAYER4[y & 3][x & 3] + 0.5) / 16 + 0.5 * mhash(x, y + 97);
-        const on = val > thr, i = (y * w + x) * 4;
-        d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = on ? 255 : 0;
-      }
-    }
-    ctx.putImageData(img, 0, 0);
-  };
-  const recolor = (): void => { rgb = toRGB(canvas.parentElement ?? document.body, getComputedStyle(canvas).color); };
-  const size = (): void => {
-    const cw = canvas.clientWidth, ch = canvas.clientHeight;
-    if (!cw || !ch) return;
-    w = Math.max(1, Math.ceil(cw / block));
-    h = Math.max(1, Math.ceil(ch / block));
-    canvas.width = w;
-    canvas.height = h;
-    img = ctx.createImageData(w, h);
-    recolor();
-    draw();
-  };
-  const run = (): void => {
-    window.clearInterval(timer);
-    if (reduced()) return;
-    timer = window.setInterval(() => {
-      if (!visible || document.hidden) return;
-      t += 0.0025;
-      draw();
-    }, 100);
-  };
-
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(canvas);
-  watchVisibility(canvas, (v) => { visible = v; });
-  document.addEventListener('stoico:theme', () => { recolor(); draw(); });
-  reducedQuery()?.addEventListener?.('change', run);
-  size();
-  run();
+interface Pt { x: number; y: number }
+interface BridgeGeo {
+  top: Pt; bottom: Pt; rx: number; tilt: number;
+  mobile: { top: Pt; bottom: Pt; rx: number };
+  exits: { angles: number[]; distance: number };
 }
 
-/* ---------------------------------------------------------------------------------------------
-   The black hole: the design system's ASCII animation (ascii.ts plays it). Pointing at an exit,
-   or focusing one, makes it turn faster for as long as you stay, as if it pulled.
-   --------------------------------------------------------------------------------------------- */
-function initHole(): void {
-  document.querySelectorAll<HTMLElement>('[data-ascii-anim]').forEach((box) => {
-    const player = attachAsciiAnimation(box);
-    const hole = box.closest<HTMLElement>('[data-hole]');
-    hole?.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
-      const on = (): void => player.setRate(2.2);
-      const off = (): void => player.setRate(1);
-      a.addEventListener('pointerenter', on);
-      a.addEventListener('pointerleave', off);
-      a.addEventListener('focus', on);
-      a.addEventListener('blur', off);
+function initBridge(): void {
+  const plot = document.querySelector<HTMLElement>('[data-bridge]');
+  const svg = plot?.querySelector<SVGSVGElement>('svg[data-warp]');
+  if (!plot || !svg) return;
+  let geo: BridgeGeo;
+  try { geo = JSON.parse(plot.dataset.bridge ?? ''); } catch { return; }
+  const exits = Array.from(plot.querySelectorAll<HTMLElement>('[data-bridge-exit]'));
+  const legend = plot.querySelector<HTMLElement>('[data-bridge-legend]');
+  const ghosts = Array.from(plot.querySelectorAll<HTMLElement>('.bridge__ghost'));
+  const r1 = (n: number): string => n.toFixed(1);
+
+  const draw = (): void => {
+    const W = plot.clientWidth, H = plot.clientHeight;
+    if (!W || !H) return;
+    const g = window.innerWidth < 860 ? { ...geo, ...geo.mobile } : geo;
+    const rx = (g.rx / 100) * W, ry = rx * geo.tilt;
+    const T = { x: (g.top.x / 100) * W, y: (g.top.y / 100) * H };
+    const B = { x: (g.bottom.x / 100) * W, y: (g.bottom.y / 100) * H };
+    const sag = (d: number): number => ry * 1.5 * Math.exp(-(d - 1) / 0.9);
+    const spread = (d: number): number => 1 + (d - 1) * (0.35 + 0.65 * (1 - Math.exp(-(d - 1) / 1.4)));
+    // One mouth's pull on a point: toward its rim, and down (dir 1) or up (dir -1).
+    const pull = (p: Pt, c: Pt, dir: number): Pt | null => {
+      const u = (p.x - c.x) / rx, v = (p.y - c.y) / ry, d = Math.hypot(u, v);
+      if (d < 1.02) return null;
+      const f = spread(d);
+      return { x: c.x + (u / d) * f * rx, y: c.y + (v / d) * f * ry + dir * sag(d) };
+    };
+    const warp = (p: Pt): Pt | null => {
+      const a = pull(p, T, 1);
+      return a && pull(a, B, -1);
+    };
+    const onPlane = (c: Pt, dir: number, d: number, th: number): Pt =>
+      d <= 1
+        ? { x: c.x + Math.cos(th) * rx, y: c.y + Math.sin(th) * ry + dir * sag(1) }
+        : pull({ x: c.x + Math.cos(th) * d * rx, y: c.y + Math.sin(th) * d * ry }, c, dir)!;
+
+    const paths: string[] = [];
+    const add = (cls: string, pts: (Pt | null)[]): void => {
+      let d = '', pen = false;
+      for (const p of pts) {
+        if (!p) { pen = false; continue; }
+        d += `${pen ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`;
+        pen = true;
+      }
+      if (d) paths.push(`<path class="${cls}" d="${d}"/>`);
+    };
+
+    // The grid, warped.
+    const STEP = 3;
+    for (let i = 1; i < 12; i++) {
+      const x = (i * W) / 12, pts: (Pt | null)[] = [];
+      for (let y = 0; y <= H; y += STEP) pts.push(warp({ x, y }));
+      add('w-grid', pts);
+    }
+    for (let j = 1; j < 6; j++) {
+      const y = (j * H) / 6, pts: (Pt | null)[] = [];
+      for (let x = 0; x <= W; x += STEP) pts.push(warp({ x, y }));
+      add('w-grid', pts);
+    }
+
+    // Both planes: rings and spokes around each mouth.
+    const plane = (c: Pt, dir: number, reach: number): void => {
+      for (const d of [1, 1.3, 1.7, 2.3, 3.1].filter((d) => d <= reach)) {
+        const pts: Pt[] = [];
+        for (let k = 0; k <= 96; k++) pts.push(onPlane(c, dir, d, (k / 96) * Math.PI * 2));
+        add(d === 1 ? 'w-rim' : 'w-ring', pts);
+      }
+      for (let k = 0; k < 16; k++) {
+        const th = (k / 16) * Math.PI * 2, pts: Pt[] = [];
+        for (let d = 1; d <= reach; d += 0.05) pts.push(onPlane(c, dir, d, th));
+        add('w-spoke', pts);
+      }
+    };
+    plane(T, 1, 3.1);
+    plane(B, -1, 2.4);
+
+    // The throat: an hourglass from rim to rim.
+    const y0 = T.y + sag(1), y1 = B.y - sag(1);
+    const at = (t: number, th: number): Pt => {
+      const r = rx * (0.3 + 0.7 * Math.pow(Math.abs(2 * t - 1), 1.5));
+      return { x: T.x + (B.x - T.x) * t + Math.cos(th) * r, y: y0 + (y1 - y0) * t + Math.sin(th) * r * geo.tilt };
+    };
+    for (let i = 1; i < 9; i++) {
+      const t = i / 9, front: Pt[] = [], back: Pt[] = [];
+      for (let k = 0; k <= 48; k++) front.push(at(t, (k / 48) * Math.PI));
+      for (let k = 0; k <= 48; k++) back.push(at(t, Math.PI + (k / 48) * Math.PI));
+      add('w-throat w-throat--back', back);
+      add('w-throat', front);
+    }
+    for (let k = 0; k < 16; k++) {
+      const th = (k / 16) * Math.PI * 2 + Math.PI / 32, pts: Pt[] = [];
+      for (let i = 0; i <= 40; i++) pts.push(at(i / 40, th));
+      add(Math.sin(th) >= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
+    }
+
+    svg.setAttribute('viewBox', `0 0 ${r1(W)} ${r1(H)}`);
+    svg.innerHTML = paths.join('');
+
+    // The links, on the far plane; the legend above the first; ghosts falling to each.
+    const ex = exits.map((li, i) => {
+      const deg = geo.exits.angles[i] ?? 124 - (i - geo.exits.angles.length + 1) * 28;
+      const p = onPlane(B, -1, geo.exits.distance, (deg * Math.PI) / 180);
+      li.style.setProperty('--x', String((p.x / W) * 100));
+      li.style.setProperty('--y', String((p.y / H) * 100));
+      return p;
     });
+    if (legend && ex[0]) {
+      legend.style.setProperty('--x', String((ex[0].x / W) * 100));
+      legend.style.setProperty('--y', String((ex[0].y / H) * 100));
+    }
+    ghosts.forEach((el, i) => {
+      const p = ex[i];
+      if (!p) return;
+      const s = onPlane(T, 1, 3, ((200 + i * 38) * Math.PI) / 180);
+      el.style.offsetPath = `path("M${r1(s.x)} ${r1(s.y)} Q${r1(T.x)} ${r1(s.y)} ${r1(T.x)} ${r1(y0)} L${r1(B.x)} ${r1(y1)} Q${r1(B.x)} ${r1(p.y)} ${r1(p.x)} ${r1(p.y)}")`;
+      el.style.setProperty('--delay', `${(i * 1.5).toFixed(1)}s`);
+    });
+    plot.classList.add('is-bridged');
+  };
+
+  plot.querySelectorAll<HTMLElement>('[data-hole-exit]').forEach((a) => {
+    const on = (): void => plot.classList.add('is-pulling');
+    const off = (): void => plot.classList.remove('is-pulling');
+    a.addEventListener('pointerenter', on);
+    a.addEventListener('pointerleave', off);
+    a.addEventListener('focus', on);
+    a.addEventListener('blur', off);
   });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(plot);
+  draw();
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -562,8 +619,18 @@ function initHud(): void {
     const k = panels.findIndex((p) => p && target && (p === target || p.contains(target)));
     if (k < 0) return;
     select(k);
-    target?.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+    // A tab's own hash (#hud-bodies, #hud-exits) lands on the whole log, title included; a row
+    // hash lands on the row. Both clear the sticky nav (scroll-margin-top in site.css).
+    const to = target === panels[k] ? hud.closest('section') ?? hud : target;
+    to?.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
   };
+  // A whole vstro row opens its card, as its name does.
+  hud.querySelectorAll<HTMLElement>('[data-row-open]').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a, button')) return;
+      row.querySelector<HTMLElement>('[data-ficha-open]')?.click();
+    });
+  });
   hud.querySelectorAll<HTMLElement>('[data-hud-caption]').forEach((c) => { c.hidden = true; });
   list.hidden = false;
   select(0);
@@ -575,8 +642,7 @@ export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-planet]').forEach((c) => planets.set(c, attachPlanet(c)));
-  document.querySelectorAll<HTMLCanvasElement>('canvas[data-nebula]').forEach(attachNebula);
-  initHole();
+  initBridge();
   initReadout();
   initHud();
   initFichas(planets);

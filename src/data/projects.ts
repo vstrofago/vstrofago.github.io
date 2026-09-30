@@ -43,7 +43,7 @@ export const projects: Project[] = [
       es: 'Un vigía de chat autoalojado para streamers de Twitch: reglas en lenguaje natural, con Jev de TypeSafe AI.',
     },
     tags: 'twitch / jev',
-    status: 'wip',
+    status: 'live',
     links: [{ kind: 'demo', href: 'https://vstrofago.github.io/vigia/' }, { kind: 'github', href: 'https://github.com/vstrofago/vigia' }],
   },
   {

@@ -2,6 +2,8 @@
 // 01 Log ("Registro"): the sky's plain-text twin, as a ship's HUD. One frame with corner
 // brackets, two tabs (stars: the projects; anomalies: the links), a mono readout of the record count, and an
 // end-of-record caret. No headline, no pitch: just the records.
+// A vstro's row opens its card (the links live there); without JS its name links to the
+// project's first link instead.
 // Without JS both panels show, one after the other, and the tab strip stays hidden;
 // cosmos.ts reveals the tabs, shows one panel at a time (arrow keys move between tabs) and
 // follows #vs-… / #hud-exits in the URL. Under 720px table rows stack.
@@ -17,7 +19,6 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
 
-const linkLabel = { demo: t('catalog.demo'), github: t('catalog.github'), more: t('catalog.more') };
 const status: Record<ProjectStatus, { label: string; dot?: boolean; outline?: boolean }> = {
   live: { label: t('status.live'), dot: true },
   wip: { label: t('status.wip') },
@@ -32,7 +33,7 @@ const tabs = [
 ---
 <section id="hud" class="section hud-section" aria-labelledby="hud-title">
   <div class="container">
-    <Label index="01" as="h2" id="hud-title" class="hud__title">{t('hud.label')}</Label>
+    <Label as="h2" id="hud-title" class="hud__title">{t('hud.label')}</Label>
     <div class="hud" data-hud>
       <div class="hud__bar">
         <div class="hud__tabs" role="tablist" aria-label={t('hud.tabs')} data-hud-tabs hidden>
@@ -62,7 +63,6 @@ const tabs = [
               <th scope="col">{t('table.body')}</th>
               <th scope="col">{t('table.class')}</th>
               <th scope="col">{t('table.status')}</th>
-              <th scope="col">{t('table.links')}</th>
             </tr>
           </thead>
           <tbody>
@@ -70,10 +70,10 @@ const tabs = [
               const id = catalogId(i);
               const constellation = constellationOf(p.id);
               return (
-                <tr id={id.toLowerCase()}>
+                <tr id={id.toLowerCase()} class="term__row" data-row-open>
                   <td class="term__id">{id}</td>
                   <th scope="row" class="term__body">
-                    <span class="term__name">{(p.title ?? placeholder.title)[lang]}</span>
+                    <a class="term__name term__open" href={p.links[0]?.href ?? `#${id.toLowerCase()}`} rel="noopener" data-ficha-open={id.toLowerCase()}>{(p.title ?? placeholder.title)[lang]}</a>
                     <span class="term__desc">{(p.description ?? placeholder.description)[lang]}</span>
                   </th>
                   <td class="term__class">
@@ -82,18 +82,6 @@ const tabs = [
                   </td>
                   <td class="term__status">
                     <Badge dot={status[p.status].dot} outline={status[p.status].outline}>{status[p.status].label}</Badge>
-                  </td>
-                  <td class="term__links">
-                    <ul>
-                      <li hidden data-closer>
-                        <button class="st-btn st-btn--link" type="button" data-ficha-open={id.toLowerCase()}>
-                          {t('catalog.closer')}<Icon name="search" size={12} />
-                        </button>
-                      </li>
-                      {p.links.map((l) => (
-                        <li><a class="st-btn st-btn--link" href={l.href} rel="noopener">{linkLabel[l.kind]}<Icon name="arrow-up-right" size={12} /></a></li>
-                      ))}
-                    </ul>
                   </td>
                 </tr>
               );

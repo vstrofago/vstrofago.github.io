@@ -1,21 +1,22 @@
 ---
-// 00 Star chart: the page's one memorable moment, in place of a marketing hero. A short
-// welcome sits under the nav; the sky follows at full width: a coordinate grid over a faint
-// nebula and a field of stars. Every project is a star, sized by magnitude (live bright, in
-// progress pulsing, soon faint), joined into constellations by hairlines. Each star links to
-// its catalog row, so without JS the chart is a table of contents; with JS it opens the
-// body's card (Fichas.astro). On the right, the black hole: the design system's ASCII
-// animation (AsciiAnimation.astro), huge and cut by the edge, its void covered so nothing
-// shows through. The links in spaces.ts sit on its rim as small stars under "Other spaces",
-// with ghosts of themselves falling in.
+// The star chart: the page's one memorable moment, in place of a marketing hero. A short
+// welcome sits under the nav; the sky follows at full width. Inside it, a darker grid panel
+// (its hour and declination marks sit outside, in the margins, so they read), a field of faint
+// stars, and every project as a star, sized by magnitude (live bright, in progress pulsing,
+// soon faint), joined into constellations named after their category. Each star links to its
+// catalog row, so without JS the chart is a table of contents; with JS it opens the body's
+// card (Fichas.astro).
+// On the right, the grid itself sinks into an Einstein–Rosen bridge: cosmos.ts warps the grid
+// into a mouth, draws the wireframe throat and the far plane it opens onto. The links in
+// spaces.ts are stars on that far side, under "Other spaces". Without JS the plain grid shows
+// and the links still sit where the far side would be.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
+import Icon from './ds/Icon.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder } from '../data/projects';
-import Icon from './ds/Icon.astro';
 import { spaces } from '../data/spaces';
-import AsciiAnimation from './AsciiAnimation.astro';
-import { constellations, placeOf, catalogId, coordsOf, magnitude, hole, exitSpot, exitsLegend } from '../data/sky';
+import { constellations, placeOf, catalogId, coordsOf, magnitude, bridge, exitAt } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -33,79 +34,81 @@ const lines = constellations.flatMap((c) =>
 const size = { live: 18, wip: 14, soon: 9 } as const;
 const ra = Array.from({ length: 11 }, (_, i) => (i + 1) * (100 / 12));
 const dec = Array.from({ length: 5 }, (_, i) => (i + 1) * (100 / 6));
-// Exits: the links, placed in the hole's box (% of the box).
-const exits = spaces.filter((s) => s.url).map((s, i, all) => ({ s, ...exitSpot(i, all.length) }));
+const decLabel = (y: number) => {
+  const d = Math.round(60 - y * 1.2);
+  return `${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d)}°`;
+};
+const exits = spaces.filter((s) => s.url).map((s, i) => ({ s, at: exitAt(i) }));
+const legendAt = exitAt(0);
 ---
 <section class="chart" aria-labelledby="chart-title" data-chart data-parallax>
   <div class="chart__intro container" data-reveal>
     <div class="chart__head">
-      <Label index="00">{t('chart.label')}</Label>
+      <Label>{t('chart.label')}</Label>
       <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
     </div>
     <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
   </div>
 
-  <div class="chart__sky" data-sky>
-    <div class="chart__field" data-parallax-layer aria-hidden="true">
-      <canvas class="chart__nebula" data-nebula data-block-size="4"></canvas>
-      <canvas class="chart__stars-bg" data-starfield></canvas>
-    </div>
-
-    <svg class="chart__grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      {ra.map((x) => <line class="chart__rule" x1={x} y1="0" x2={x} y2="100" vector-effect="non-scaling-stroke" />)}
-      {dec.map((y) => <line class="chart__rule" x1="0" y1={y} x2="100" y2={y} vector-effect="non-scaling-stroke" />)}
-      <path class="chart__ecliptic" d="M0 70 C 25 48, 60 30, 100 38" vector-effect="non-scaling-stroke" />
-      {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
-    </svg>
-
-    <ul class="chart__ticks" aria-hidden="true">
+  <div class="chart__sky">
+    <ul class="chart__ticks chart__ticks--ra" aria-hidden="true">
       {ra.map((x, i) => <li style={`--x:${x}`}>{String((i + 1) * 2).padStart(2, '0')}h</li>)}
     </ul>
-
-    <ul class="chart__constellations" aria-hidden="true">
-      {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
+    <ul class="chart__ticks chart__ticks--dec" aria-hidden="true">
+      {dec.map((y) => <li style={`--y:${y}`}>{decLabel(y)}</li>)}
     </ul>
 
-    <ol class="chart__stars" aria-label={t('chart.stars')}>
-      {stars.map(({ p, id, at }) => (
-        <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
-          <a
-            class="star__link"
-            href={`#${id.toLowerCase()}`}
-            data-star={id.toLowerCase()}
-            data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
-          >
-            <span class="star__glyph"><Mark size={size[p.status]} /></span>
-            <span class="star__label">
-              <span class="star__id">{id}</span>
-              <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
-            </span>
-          </a>
-        </li>
-      ))}
-    </ol>
-
     <div
-      class="hole"
-      style={`--x:${hole.x};--y:${hole.y};--w:${hole.width};--cx:${hole.core.x};--cy:${hole.core.y};--vw:${hole.core.w};--vh:${hole.core.h}`}
-      data-hole
+      class="chart__plot"
+      data-sky
+      data-bridge={JSON.stringify(bridge)}
     >
-      <span class="hole__void" aria-hidden="true"></span>
-      <AsciiAnimation name="hole" quality="high" fps={12} errorText={t('hole.error')} class="hole__ascii" />
-      <div class="hole__drifts" aria-hidden="true">
-        {exits.map(({ x, y }, i) => (
-          <span class="hole__drift" style={`--ex:${x};--ey:${y};--delay:${(i * 1.3).toFixed(1)}s`}>
-            <span class="hole__drift-y"><Mark size={7} /></span>
-          </span>
-        ))}
+      <div class="chart__field" data-parallax-layer aria-hidden="true">
+        <canvas class="chart__stars-bg" data-starfield></canvas>
       </div>
-      <p class="hole__legend" id="hole-legend" style={`--ex:${exitsLegend.x};--ey:${exitsLegend.y}`}>{t('hole.links')}</p>
-      <ul class="hole__exits" aria-labelledby="hole-legend">
-        {exits.map(({ s, x, y }) => (
-          <li class="hole__exit" style={`--ex:${x};--ey:${y}`}>
+
+      <svg class="chart__grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false" data-grid-static>
+        {ra.map((x) => <line class="chart__rule" x1={x} y1="0" x2={x} y2="100" vector-effect="non-scaling-stroke" />)}
+        {dec.map((y) => <line class="chart__rule" x1="0" y1={y} x2="100" y2={y} vector-effect="non-scaling-stroke" />)}
+      </svg>
+      <svg class="chart__warp" aria-hidden="true" focusable="false" data-warp></svg>
+      <svg class="chart__grid chart__grid--lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
+      </svg>
+
+      <ul class="chart__constellations" aria-hidden="true">
+        {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
+      </ul>
+
+      <ol class="chart__stars" aria-label={t('chart.stars')}>
+        {stars.map(({ p, id, at }) => (
+          <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
+            <a
+              class="star__link"
+              href={`#${id.toLowerCase()}`}
+              data-star={id.toLowerCase()}
+              data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
+            >
+              <span class="star__glyph"><Mark size={size[p.status]} /></span>
+              <span class="star__label">
+                <span class="star__id">{id}</span>
+                <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+
+      <div class="bridge__ghosts" aria-hidden="true" data-ghosts>
+        {exits.map(() => <span class="bridge__ghost"><Mark size={7} /></span>)}
+      </div>
+      <p class="bridge__legend" id="bridge-legend" style={`--x:${legendAt.x};--y:${legendAt.y}`} data-bridge-legend>{t('hole.links')}</p>
+      <ul class="bridge__exits" aria-labelledby="bridge-legend">
+        {exits.map(({ s, at }) => (
+          <li class="bridge__exit" style={`--x:${at.x};--y:${at.y}`} data-bridge-exit>
             <a href={s.url} rel="noopener" data-hole-exit data-readout={`${t('hole.jump')} · ${s.handle}`}>
-              <span class="hole__star" aria-hidden="true"><Mark size={9} /></span>
-              <span class="hole__name">{s.name[lang]}</span>
+              <span class="bridge__star" aria-hidden="true"><Mark size={9} /></span>
+              <span class="bridge__name">{s.name[lang]}</span>
               <Icon name="arrow-up-right" size={12} />
             </a>
           </li>
