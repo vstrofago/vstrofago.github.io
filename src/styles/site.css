@@ -67,7 +67,7 @@ body { margin: 0; min-height: 100vh; }
 
 /* base.css styles every `.stoico a` (0,1,1), which outranks the single-class component rules
    when they sit on an <a>. Restate what an anchor-rendered component needs. */
-.stoico a:where(.st-btn:not(.st-btn--link), .skip-link, .nav__brand, .star__link, .badge88) { text-decoration: none; }
+.stoico a:where(.st-btn:not(.st-btn--link), .skip-link, .nav__brand, .star__link) { text-decoration: none; }
 .stoico a.st-btn--primary { color: var(--bg); }
 .stoico a:where(.st-btn--secondary, .st-btn--ghost, .st-btn--link, .star__link) { color: var(--fg); }
 .stoico a.skip-link { color: var(--bg); }
@@ -161,12 +161,13 @@ body { margin: 0; min-height: 100vh; }
 
 /* The Einstein–Rosen bridge (drawn by cosmos.ts into svg[data-warp], in the plot's pixels):
    the warped grid, the rings and spokes of both mouths, and the throat between them; the
-   throat's far side is fainter and dashed, and its meridians flow slowly downward (faster while
-   a link is pointed at). The links sit on the far plane, names to the left, under the legend;
-   ghost stars ride offset-paths from the near plane, down the throat, out to each link. */
+   throat's far side is fainter and dashed, and its meridians flow slowly along it (faster
+   while a link is pointed at). The links sit on the other side, names to the right, under the
+   legend; ghost stars ride offset-paths along a grid line, through the throat, out to each link. */
 .chart__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .chart__warp path { fill: none; stroke-width: 1; }
 .w-grid { stroke: var(--border-strong); }
+.w-edge { stroke: var(--border); }
 .w-ring, .w-spoke { stroke: var(--border-strong); }
 .w-rim { stroke: var(--fg-subtle); }
 .w-throat, .w-merid { stroke: var(--fg-subtle); }
@@ -182,10 +183,10 @@ body { margin: 0; min-height: 100vh; }
 @keyframes bridge-ghost { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 0.8; } 38% { opacity: 0.25; } 62% { opacity: 0.25; } 92% { opacity: 0.8; } 100% { offset-distance: 100%; opacity: 0; } }
 @supports not (offset-path: path("M0 0")) { .bridge__ghosts { display: none; } }
 
-.bridge__legend { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; margin: 0; transform: translate(calc(-100% + 4px), -34px); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
+.bridge__legend { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; margin: 0; transform: translate(-4px, -34px); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
 .bridge__exits { list-style: none; margin: 0; padding: 0; }
 .bridge__exit { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); z-index: 2; width: 0; height: 0; }
-.bridge__exit a { position: absolute; top: 0; left: 0; transform: translate(calc(-100% + 11px), -50%); display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
+.bridge__exit a { position: absolute; top: 0; left: 0; transform: translate(-11px, -50%); display: inline-flex; flex-direction: row; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-control); font: 400 12px/1 var(--font-mono); letter-spacing: 0.02em; white-space: nowrap; }
 .stoico .bridge__exit a { text-decoration: none; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
 .stoico .bridge__exit a:hover, .stoico .bridge__exit a:focus-visible { color: var(--fg); }
 .bridge__star { display: grid; }
@@ -227,7 +228,6 @@ body { margin: 0; min-height: 100vh; }
 }
 @media (max-width: 600px) {
   .star__name { display: none; }
-  .badges { max-width: 184px; margin-inline: auto; }
   .chart__legend { gap: var(--space-4); }
 }
 
@@ -339,21 +339,13 @@ tr:target .term__id { color: var(--fg); }
   .ficha__facts div { grid-template-columns: 112px minmax(0, 1fr); }
 }
 
-/* ---------- Footer: the AsciiBanner, the wordmark, one line, days in orbit, 88×31 buttons ---------- */
+/* ---------- Footer: the AsciiBanner, the wordmark, one line, days in orbit ---------- */
 .footer { position: relative; }
 .footer .ascii-banner { height: calc(22 * 14px); }
 .footer .ascii-banner__layer { font-size: 11px; line-height: 14px; }
 .footer__inner { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-5); padding-bottom: var(--space-8); text-align: center; }
 
 .footer__orbit { margin: 0; font: 400 var(--text-label)/1.6 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); font-variant-numeric: tabular-nums; }
-/* 88×31 buttons: a pixel star on an inverted cell, two lines of mono. */
-.badges { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
-.badge88 { display: flex; width: 88px; height: 31px; box-sizing: border-box; border: 1px solid var(--border-strong); color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
-.badge88__mark { flex: none; display: grid; place-items: center; width: 20px; background: var(--fg-subtle); color: var(--bg); }
-.badge88__text { display: flex; align-items: center; padding: 0 5px; font: 400 10px/12px var(--font-mono); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
-.stoico a.badge88 { color: var(--fg-muted); }
-.stoico a.badge88:hover { color: var(--fg); border-color: var(--fg-muted); }
-a.badge88:hover .badge88__mark { background: var(--fg); }
 
 /* ---------- Screensaver: fades in over everything after a minute idle ---------- */
 .screensaver { position: fixed; inset: 0; z-index: 100; background: var(--bg); color: var(--fg); opacity: 0; transition: opacity 600ms var(--ease-out); cursor: none; }

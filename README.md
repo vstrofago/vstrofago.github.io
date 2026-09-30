@@ -61,7 +61,6 @@ To build locally for a sub-path: `BASE_PATH=/site SITE_URL=https://vstrofago.git
 | All interface copy, both languages | `src/i18n/ui.ts` |
 | Projects (stars, catalog rows and cards) | `src/data/projects.ts` |
 | Where each star sits, constellations, planet looks, the bridge | `src/data/sky.ts` |
-| The footer's 88×31 buttons | `src/data/badges.ts` |
 | ASCII animations (ASCIIGen exports) | `public/ascii/` |
 | Links (the bridge's far side and the HUD's Anomalías tab) | `src/data/spaces.ts` |
 

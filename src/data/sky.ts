@@ -53,31 +53,25 @@ export const constellations: Constellation[] = [
   { name: 'Lyra', at: { x: 44, y: 60 }, members: ['music-for-work'] },
 ];
 
-/** The Einstein–Rosen bridge, drawn by cosmos.ts over the right of the grid: the grid sinks into
- *  a mouth (`top`), runs down a wireframe throat, and opens onto another plane (`bottom`),
- *  where the links in spaces.ts sit as stars. Positions are % of the grid; `rx` is the mouths'
- *  radius as % of the grid's width (their height is `tilt` × that, for perspective). `mobile`
- *  replaces them under 860px. `exits` are the links' angles around the far mouth (degrees,
- *  0 = right, 90 = down) and their distance in mouth radii. */
+/** The Einstein–Rosen bridge, drawn by cosmos.ts. The grid stays straight up to `start`
+ *  (16h on wide screens), then its lines converge, with the bridge's own rings, into a first
+ *  mouth (`mouthA`); a wireframe throat runs to a second mouth (`mouthB`); past it the lines
+ *  flare out again: the other side, where the links sit (`linksAt`). All four are % along the
+ *  bridge's axis: left to right on wide screens, top to bottom under 860px (`vertical`).
+ *  `radius` is the mouths' radius as a fraction of the plot's cross size; `tilt` flattens the
+ *  rings for perspective. */
+export interface BridgeAxis { start: number; mouthA: number; mouthB: number; linksAt: number; radius: number }
 export const bridge = {
-  top: { x: 76, y: 24 },
-  bottom: { x: 76, y: 74 },
-  rx: 10,
+  horizontal: { start: 100 * (8 / 12), mouthA: 74, mouthB: 83, linksAt: 87, radius: 0.22 } as BridgeAxis,
+  vertical: { start: 62, mouthA: 68, mouthB: 74, linksAt: 79, radius: 0.24 } as BridgeAxis,
   tilt: 0.3,
-  mobile: { top: { x: 68, y: 66 }, bottom: { x: 68, y: 88 }, rx: 20 },
-  exits: { angles: [240, 208, 180, 152, 124], distance: 2.1 },
 };
 
-/** Where an exit sits, as % of the grid, for a grid of the given aspect (width / height).
- *  cosmos.ts recomputes it with the real aspect; this is the no-JS / first-paint position. */
-export function exitAt(i: number, aspect = 2, geo: { bottom: { x: number; y: number }; rx: number } = bridge): { x: number; y: number } {
-  const angles = bridge.exits.angles;
-  const deg = i < angles.length ? angles[i] : 124 - (i - angles.length + 1) * 28;
-  const a = (deg * Math.PI) / 180, d = bridge.exits.distance;
-  return {
-    x: geo.bottom.x + Math.cos(a) * d * geo.rx,
-    y: geo.bottom.y + Math.sin(a) * d * geo.rx * bridge.tilt * aspect,
-  };
+/** Where the i-th of n links sits on the far side, as % of the plot (no-JS / first paint;
+ *  cosmos.ts places them again with the plot's real size). Wide: a column right of the far
+ *  mouth, names to the right. */
+export function exitAt(i: number, n: number): { x: number; y: number } {
+  return { x: bridge.horizontal.linksAt, y: 50 + (i - (n - 1) / 2) * 7 };
 }
 
 /** Small deterministic hash of a string, 0–1. */

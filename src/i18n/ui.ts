@@ -65,7 +65,6 @@ export const ui = {
     'ficha.next': 'Next body',
     'footer.orbit': 'In orbit since',
     'footer.day': 'Day',
-    'footer.badges': 'Buttons, the old way',
     'footer.note': 'Made with a terminal and too much coffee.',
   },
   es: {
@@ -123,7 +122,6 @@ export const ui = {
     'ficha.next': 'Cuerpo siguiente',
     'footer.orbit': 'En órbita desde',
     'footer.day': 'Día',
-    'footer.badges': 'Botones, a la antigua',
     'footer.note': 'Hecho con una terminal y demasiado café.',
   },
 } as const;

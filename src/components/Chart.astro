@@ -6,10 +6,10 @@
 // soon faint), joined into constellations named after their category. Each star links to its
 // catalog row, so without JS the chart is a table of contents; with JS it opens the body's
 // card (Fichas.astro).
-// On the right, the grid itself sinks into an Einstein–Rosen bridge: cosmos.ts warps the grid
-// into a mouth, draws the wireframe throat and the far plane it opens onto. The links in
-// spaces.ts are stars on that far side, under "Other spaces". Without JS the plain grid shows
-// and the links still sit where the far side would be.
+// From 16h the grid's lines converge into an Einstein–Rosen bridge (cosmos.ts draws it): a
+// mouth, a wireframe throat, a second mouth, and the lines flaring out again on the other
+// side, where the links in spaces.ts sit as stars under "Other spaces". Without JS the plain
+// grid shows and the links still sit where the far side would be.
 import Label from './ds/Label.astro';
 import Mark from './ds/Mark.astro';
 import Icon from './ds/Icon.astro';
@@ -38,8 +38,9 @@ const decLabel = (y: number) => {
   const d = Math.round(60 - y * 1.2);
   return `${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d)}°`;
 };
-const exits = spaces.filter((s) => s.url).map((s, i) => ({ s, at: exitAt(i) }));
-const legendAt = exitAt(0);
+const linked = spaces.filter((s) => s.url);
+const exits = linked.map((s, i) => ({ s, at: exitAt(i, linked.length) }));
+const legendAt = exitAt(0, linked.length);
 ---
 <section class="chart" aria-labelledby="chart-title" data-chart data-parallax>
   <div class="chart__intro container" data-reveal>

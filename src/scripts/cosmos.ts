@@ -433,20 +433,18 @@ function initOrbitDay(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The Einstein–Rosen bridge. The grid (drawn here, to the plot's real size) sinks into a mouth:
-   near it, points are pulled toward the rim and dragged down, so the grid lines, a few rings
-   and spokes curve into the funnel. From the mouth a wireframe throat narrows and widens
-   again (an hourglass; its far side is fainter and dashed) down to a second mouth, whose plane
-   flares the other way: the other side, where the links sit. Ghost stars fall into the first
-   mouth, down the throat, and out to each link (CSS offset-path). The throat's lines flow
-   slowly downward, faster while a link is pointed at. Without JS the plain grid stays.
+   The Einstein–Rosen bridge. The grid (redrawn here to the plot's real size) runs straight up
+   to `start` (16h on wide screens); from there its lines converge, with a few rings, into a
+   mouth, run through a wireframe throat (an hourglass; its far side dashed and fainter), and
+   flare out again past a second mouth: the other side, where the links sit. The geometry is
+   written along the bridge's axis (a) and across it (b), so the same code draws it left to
+   right on wide screens and top to bottom on narrow ones. Ghost stars follow a grid line into
+   the mouth, through the throat, and out to each link (CSS offset-path); the throat's lines
+   flow slowly along it, faster while a link is pointed at. Without JS the plain grid stays.
    --------------------------------------------------------------------------------------------- */
 interface Pt { x: number; y: number }
-interface BridgeGeo {
-  top: Pt; bottom: Pt; rx: number; tilt: number;
-  mobile: { top: Pt; bottom: Pt; rx: number };
-  exits: { angles: number[]; distance: number };
-}
+interface Axis { start: number; mouthA: number; mouthB: number; linksAt: number; radius: number }
+interface BridgeGeo { horizontal: Axis; vertical: Axis; tilt: number }
 
 function initBridge(): void {
   const plot = document.querySelector<HTMLElement>('[data-bridge]');
@@ -458,112 +456,105 @@ function initBridge(): void {
   const legend = plot.querySelector<HTMLElement>('[data-bridge-legend]');
   const ghosts = Array.from(plot.querySelectorAll<HTMLElement>('.bridge__ghost'));
   const r1 = (n: number): string => n.toFixed(1);
+  const ease = (t: number): number => { const c = Math.max(0, Math.min(1, t)); return c * c * (3 - 2 * c); };
 
   const draw = (): void => {
     const W = plot.clientWidth, H = plot.clientHeight;
     if (!W || !H) return;
-    const g = window.innerWidth < 860 ? { ...geo, ...geo.mobile } : geo;
-    const rx = (g.rx / 100) * W, ry = rx * geo.tilt;
-    const T = { x: (g.top.x / 100) * W, y: (g.top.y / 100) * H };
-    const B = { x: (g.bottom.x / 100) * W, y: (g.bottom.y / 100) * H };
-    const sag = (d: number): number => ry * 1.5 * Math.exp(-(d - 1) / 0.9);
-    const spread = (d: number): number => 1 + (d - 1) * (0.35 + 0.65 * (1 - Math.exp(-(d - 1) / 1.4)));
-    // One mouth's pull on a point: toward its rim, and down (dir 1) or up (dir -1).
-    const pull = (p: Pt, c: Pt, dir: number): Pt | null => {
-      const u = (p.x - c.x) / rx, v = (p.y - c.y) / ry, d = Math.hypot(u, v);
-      if (d < 1.02) return null;
-      const f = spread(d);
-      return { x: c.x + (u / d) * f * rx, y: c.y + (v / d) * f * ry + dir * sag(d) };
-    };
-    const warp = (p: Pt): Pt | null => {
-      const a = pull(p, T, 1);
-      return a && pull(a, B, -1);
-    };
-    const onPlane = (c: Pt, dir: number, d: number, th: number): Pt =>
-      d <= 1
-        ? { x: c.x + Math.cos(th) * rx, y: c.y + Math.sin(th) * ry + dir * sag(1) }
-        : pull({ x: c.x + Math.cos(th) * d * rx, y: c.y + Math.sin(th) * d * ry }, c, dir)!;
+    const vertical = window.innerWidth < 860;
+    const ax = vertical ? geo.vertical : geo.horizontal;
+    const L = vertical ? H : W, C = vertical ? W : H, mid = C / 2, R0 = C / 2;
+    const P = (a: number, b: number): Pt => (vertical ? { x: b, y: a } : { x: a, y: b });
+    const a0 = (ax.start / 100) * L, aA = (ax.mouthA / 100) * L, aB = (ax.mouthB / 100) * L, aL = (ax.linksAt / 100) * L;
+    const Rm = ax.radius * C, k = geo.tilt;
+    // Radius of the sheet: full before the start, narrowing into mouth A, flaring after mouth B.
+    const rIn = (a: number): number => Rm + (R0 - Rm) * (1 - ease((a - a0) / (aA - a0)));
+    const rOut = (a: number): number => Rm + (R0 * 0.96 - Rm) * ease(((a - aB) / (L - aB)) * 1.15);
+    const rThroat = (t: number): number => Rm * (0.38 + 0.62 * Math.pow(Math.abs(2 * t - 1), 1.6));
 
     const paths: string[] = [];
-    const add = (cls: string, pts: (Pt | null)[]): void => {
-      let d = '', pen = false;
-      for (const p of pts) {
-        if (!p) { pen = false; continue; }
-        d += `${pen ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`;
-        pen = true;
+    const add = (cls: string, pts: Pt[]): void => {
+      if (pts.length < 2) return;
+      paths.push(`<path class="${cls}" d="${pts.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}"/>`);
+    };
+    // A ring across the sheet at a, cross radius r: the near half solid, the far half dashed.
+    const ring = (a: number, r: number, cls: string): void => {
+      const near: Pt[] = [], far: Pt[] = [];
+      for (let i = 0; i <= 48; i++) {
+        const th = Math.PI / 2 + (i / 48) * Math.PI; // left half (toward the start)
+        near.push(P(a + Math.cos(th) * r * k, mid + Math.sin(th) * r));
+        far.push(P(a - Math.cos(th) * r * k, mid - Math.sin(th) * r));
       }
-      if (d) paths.push(`<path class="${cls}" d="${d}"/>`);
+      add(`${cls} w-throat--back`, far);
+      add(cls, near);
     };
 
-    // The grid, warped.
-    const STEP = 3;
-    for (let i = 1; i < 12; i++) {
-      const x = (i * W) / 12, pts: (Pt | null)[] = [];
-      for (let y = 0; y <= H; y += STEP) pts.push(warp({ x, y }));
-      add('w-grid', pts);
+    // Straight grid lines across the axis, up to the start.
+    const across = vertical ? 6 : 12;
+    for (let i = 1; i < across; i++) {
+      const a = (i / across) * L;
+      if (a > a0 + 0.5) break;
+      add('w-grid', [P(a, 0), P(a, C)]);
     }
-    for (let j = 1; j < 6; j++) {
-      const y = (j * H) / 6, pts: (Pt | null)[] = [];
-      for (let x = 0; x <= W; x += STEP) pts.push(warp({ x, y }));
-      add('w-grid', pts);
+    // Lines along the axis: straight, then converging into mouth A; and out of mouth B.
+    const along = vertical ? 12 : 6;
+    for (let j = 0; j <= along; j++) {
+      const f = (j / along) * 2 - 1; // -1 … 1 across
+      const inn: Pt[] = [P(0, mid + f * R0)];
+      const aEnd = aA - Rm * k * Math.sqrt(Math.max(0, 1 - f * f));
+      for (let a = a0; a <= aEnd; a += 3) inn.push(P(a, mid + f * rIn(a)));
+      inn.push(P(aEnd, mid + f * rIn(aEnd)));
+      add(j === 0 || j === along ? 'w-grid w-edge' : 'w-grid', inn);
+      const out: Pt[] = [];
+      for (let a = aB + Rm * k * Math.sqrt(Math.max(0, 1 - f * f)); a <= L + 3; a += 3) out.push(P(a, mid + f * rOut(a)));
+      add('w-grid', out);
     }
-
-    // Both planes: rings and spokes around each mouth.
-    const plane = (c: Pt, dir: number, reach: number): void => {
-      for (const d of [1, 1.3, 1.7, 2.3, 3.1].filter((d) => d <= reach)) {
-        const pts: Pt[] = [];
-        for (let k = 0; k <= 96; k++) pts.push(onPlane(c, dir, d, (k / 96) * Math.PI * 2));
-        add(d === 1 ? 'w-rim' : 'w-ring', pts);
+    // Rings on the converging sheet and on the far one.
+    for (const t of [0.6, 0.82, 0.94]) { const a = a0 + (aA - a0) * t; ring(a, rIn(a), 'w-ring'); }
+    for (const t of [0.18, 0.42]) { const a = aB + (L - aB) * t; ring(a, rOut(a), 'w-ring'); }
+    // The two mouths and the throat between them.
+    ring(aA, Rm, 'w-rim');
+    ring(aB, Rm, 'w-rim');
+    for (let i = 1; i < 6; i++) { const t = i / 6; ring(aA + (aB - aA) * t, rThroat(t), 'w-throat'); }
+    for (let m = 0; m < 14; m++) {
+      const th = (m / 14) * Math.PI * 2 + Math.PI / 28, pts: Pt[] = [];
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40, r = rThroat(t);
+        pts.push(P(aA + (aB - aA) * t + Math.cos(th) * r * k, mid + Math.sin(th) * r));
       }
-      for (let k = 0; k < 16; k++) {
-        const th = (k / 16) * Math.PI * 2, pts: Pt[] = [];
-        for (let d = 1; d <= reach; d += 0.05) pts.push(onPlane(c, dir, d, th));
-        add('w-spoke', pts);
-      }
-    };
-    plane(T, 1, 3.1);
-    plane(B, -1, 2.4);
-
-    // The throat: an hourglass from rim to rim.
-    const y0 = T.y + sag(1), y1 = B.y - sag(1);
-    const at = (t: number, th: number): Pt => {
-      const r = rx * (0.3 + 0.7 * Math.pow(Math.abs(2 * t - 1), 1.5));
-      return { x: T.x + (B.x - T.x) * t + Math.cos(th) * r, y: y0 + (y1 - y0) * t + Math.sin(th) * r * geo.tilt };
-    };
-    for (let i = 1; i < 9; i++) {
-      const t = i / 9, front: Pt[] = [], back: Pt[] = [];
-      for (let k = 0; k <= 48; k++) front.push(at(t, (k / 48) * Math.PI));
-      for (let k = 0; k <= 48; k++) back.push(at(t, Math.PI + (k / 48) * Math.PI));
-      add('w-throat w-throat--back', back);
-      add('w-throat', front);
-    }
-    for (let k = 0; k < 16; k++) {
-      const th = (k / 16) * Math.PI * 2 + Math.PI / 32, pts: Pt[] = [];
-      for (let i = 0; i <= 40; i++) pts.push(at(i / 40, th));
-      add(Math.sin(th) >= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
+      add(Math.cos(th) <= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
     }
 
     svg.setAttribute('viewBox', `0 0 ${r1(W)} ${r1(H)}`);
     svg.innerHTML = paths.join('');
 
-    // The links, on the far plane; the legend above the first; ghosts falling to each.
-    const ex = exits.map((li, i) => {
-      const deg = geo.exits.angles[i] ?? 124 - (i - geo.exits.angles.length + 1) * 28;
-      const p = onPlane(B, -1, geo.exits.distance, (deg * Math.PI) / 180);
-      li.style.setProperty('--x', String((p.x / W) * 100));
-      li.style.setProperty('--y', String((p.y / H) * 100));
-      return p;
+    // The links on the other side: a column right of mouth B (wide) or a stack below it (narrow).
+    const n = exits.length;
+    const spots = exits.map((_, i) => {
+      if (vertical) return P(aL + i * 30, mid - C * 0.16);
+      const step = Math.min(C * 0.075, (rOut(aL) * 1.5) / Math.max(1, n));
+      return P(aL, mid + (i - (n - 1) / 2) * step);
     });
-    if (legend && ex[0]) {
-      legend.style.setProperty('--x', String((ex[0].x / W) * 100));
-      legend.style.setProperty('--y', String((ex[0].y / H) * 100));
+    exits.forEach((li, i) => {
+      li.style.setProperty('--x', String((spots[i].x / W) * 100));
+      li.style.setProperty('--y', String((spots[i].y / H) * 100));
+    });
+    if (legend && spots[0]) {
+      legend.style.setProperty('--x', String((spots[0].x / W) * 100));
+      legend.style.setProperty('--y', String((spots[0].y / H) * 100));
     }
+    // Ghosts: along a grid line, into the mouth, through the throat, out to a link.
     ghosts.forEach((el, i) => {
-      const p = ex[i];
-      if (!p) return;
-      const s = onPlane(T, 1, 3, ((200 + i * 38) * Math.PI) / 180);
-      el.style.offsetPath = `path("M${r1(s.x)} ${r1(s.y)} Q${r1(T.x)} ${r1(s.y)} ${r1(T.x)} ${r1(y0)} L${r1(B.x)} ${r1(y1)} Q${r1(B.x)} ${r1(p.y)} ${r1(p.x)} ${r1(p.y)}")`;
-      el.style.setProperty('--delay', `${(i * 1.5).toFixed(1)}s`);
+      const to = spots[i];
+      if (!to) return;
+      const f = [-1, -2 / 3, -1 / 3, 1 / 3, 2 / 3, 1][i % 6];
+      const pts: Pt[] = [P(Math.max(0, a0 - L * 0.12), mid + f * R0)];
+      for (let a = a0; a <= aA; a += 6) pts.push(P(a, mid + f * rIn(a)));
+      pts.push(P(aA, mid), P(aB, mid));
+      const toA = vertical ? to.y : to.x, toB = vertical ? to.x : to.y;
+      for (let s = 1; s <= 12; s++) { const u = s / 12; pts.push(P(aB + (toA - aB) * u, mid + (toB - mid) * ease(u))); }
+      el.style.offsetPath = `path("${pts.map((p, j) => `${j ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}")`;
+      el.style.setProperty('--delay', `${(i * 1.6).toFixed(1)}s`);
     });
     plot.classList.add('is-bridged');
   };
