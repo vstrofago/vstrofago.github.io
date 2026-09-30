@@ -75,6 +75,25 @@ One native `<dialog>` per project, `id="ficha-vs-00n"`:
   the bridge). The label hangs to the right, so keep `x` ≤ 78; keep at least ~12 units between
   ships so labels never touch.
 
+### The fleet (ships patrol their grid)
+
+`initFleet` (`src/scripts/cosmos.ts`), with the transitions in `site.css` (`.outer__spot`,
+`.outer__ship`):
+
+- Every 1.4s one ship, picked at random, takes one step of half a grid cell (the section's
+  width / 24) along a grid axis, never diagonally. The spot slides there in 2.6s
+  (`--ease-in-out`) and the hull turns to its heading in 0.6s (`--heading`: 0° up, 90° right,
+  180° down, −90° left).
+- It never strays more than two steps from its post (`at`), and a step that would bring it
+  within ~170px across / ~56px down of another ship's position is not taken, so labels never
+  overlap.
+- A ship under the cursor or holding focus doesn't move, so it's always easy to click. The
+  label travels with it (the whole link moves).
+- The fleet stops offscreen, in hidden tabs and when the plane is hidden (phones), and stays at
+  its posts under reduced motion. Ghost stars always aim at the post, not the patrol.
+- To tune it: `RANGE` (steps from the post), `GAP_X` / `GAP_Y` (spacing) and the interval in
+  `initFleet`; the step's duration in `.outer__spot`.
+
 It then appears as a ship in the lower space, in the nav's Outer spaces menu and in the
 Registro's second tab, and a ghost star falls through the bridge to it.
 
@@ -108,6 +127,8 @@ All in `initBridge` (`src/scripts/cosmos.ts`), redrawn to the section's real siz
   vertical lines converge with `smoothstep` into mouth A, the throat is an hourglass
   (`r = Rm·(0.38 + 0.62·|2t−1|^1.6)`) drawn as rings and meridians (far halves dashed), and the
   lines flare out after mouth B until just above the outer spaces' legend, then run straight.
+- The welcome is kept compact (small gaps, `--space-5` above it and above the grid) so the grid
+  gets the room; don't add lines to it.
 - The zone heights live in `site.css` (`.cosmos__upper`, `.cosmos__bridge`, `.cosmos__lower`);
   the bridge sits roughly mid-page.
 - Coordinates: `coordsOf(x, y)` maps x 0–100 to 00h–24h and y 0–100 to +60°…−60°.

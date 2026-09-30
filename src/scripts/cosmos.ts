@@ -9,6 +9,7 @@
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
 //   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
 //   [data-nav-menu]       wide screens: Projects / Outer spaces drop a plain list
+//   .outer__field         the fleet: the outer spaces' ships patrol their grid
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
@@ -548,7 +549,10 @@ function initBridge(): void {
       const star = exits[i]?.querySelector('.outer__ship');
       if (!star) return;
       const r = star.getBoundingClientRect();
-      const to = { x: r.left + r.width / 2 - secRect.left, y: r.top + r.height / 2 - secRect.top };
+      // Aim at the ship's post, not wherever its patrol has taken it (see initFleet).
+      const spot = star.closest<HTMLElement>('.outer__spot');
+      const m = spot ? new DOMMatrixReadOnly(getComputedStyle(spot).transform === 'none' ? undefined : getComputedStyle(spot).transform) : null;
+      const to = { x: r.left + r.width / 2 - secRect.left - (m?.e ?? 0), y: r.top + r.height / 2 - secRect.top - (m?.f ?? 0) };
       const f = [-2 / 3, 2 / 3, -1 / 3, 1 / 3, -5 / 6, 5 / 6][i % 6];
       const pts: Pt[] = [{ x: cx + f * R0, y: Math.max(0, a0 - 260) }];
       for (let a = a0; a <= aA; a += 8) pts.push({ x: cx + f * rIn(a), y: a });
@@ -696,6 +700,58 @@ function initNavMenus(): void {
   mode();
 }
 
+/* ---------------------------------------------------------------------------------------------
+   The fleet: the outer spaces' ships patrol their grid. Every 1.4s one ship takes a step of
+   half a grid cell along a grid axis (never diagonally), turning its hull to the heading, and
+   never strays more than two steps from its post (`at` in spaces.ts) or comes too close to
+   another ship. A ship being pointed at or focused holds still, so it's always easy to click;
+   the others keep moving. Still under reduced motion, paused offscreen and in hidden tabs.
+   --------------------------------------------------------------------------------------------- */
+function initFleet(): void {
+  const field = document.querySelector<HTMLElement>('.outer__field');
+  const sec = document.querySelector<HTMLElement>('[data-cosmos]');
+  if (!field || !sec) return;
+  const spots = Array.from(field.querySelectorAll<HTMLElement>('.outer__spot'));
+  if (!spots.length) return;
+  const pos = spots.map(() => ({ gx: 0, gy: 0 }));
+  const RANGE = 2, GAP_X = 170, GAP_Y = 56;
+  const DIRS = [
+    { dx: 0, dy: -1, deg: 0 },
+    { dx: 1, dy: 0, deg: 90 },
+    { dx: 0, dy: 1, deg: 180 },
+    { dx: -1, dy: 0, deg: -90 },
+  ];
+  let visible = true;
+  watchVisibility(field, (v) => { visible = v; });
+  const home = (el: HTMLElement): { x: number; y: number } => ({ x: el.offsetLeft, y: el.offsetTop });
+  const tick = (): void => {
+    if (reduced() || !visible || document.hidden || getComputedStyle(field).display === 'none') return;
+    const step = sec.clientWidth / 24; // half a grid cell
+    const i = Math.floor(Math.random() * spots.length);
+    const el = spots[i];
+    if (el.matches(':hover') || el.contains(document.activeElement)) return;
+    const here = pos[i];
+    const options = DIRS.filter(({ dx, dy }) => {
+      const gx = here.gx + dx, gy = here.gy + dy;
+      if (Math.abs(gx) > RANGE || Math.abs(gy) > RANGE) return false;
+      const a = home(el);
+      const ax = a.x + gx * step, ay = a.y + gy * step;
+      return spots.every((o, j) => {
+        if (j === i) return true;
+        const b = home(o);
+        return Math.abs(b.x + pos[j].gx * step - ax) > GAP_X || Math.abs(b.y + pos[j].gy * step - ay) > GAP_Y;
+      });
+    });
+    if (!options.length) return;
+    const d = options[Math.floor(Math.random() * options.length)];
+    here.gx += d.dx;
+    here.gy += d.dy;
+    el.style.setProperty('--heading', `${d.deg}deg`);
+    el.style.transform = `translate(${here.gx * step}px, ${here.gy * step}px)`;
+  };
+  window.setInterval(tick, 1400);
+}
+
 export function initCosmos(): void {
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-starfield]').forEach(attachStarfield);
   const planets = new Map<HTMLCanvasElement, PlanetControl>();
@@ -704,6 +760,7 @@ export function initCosmos(): void {
   initReadout();
   initHud();
   initNavMenus();
+  initFleet();
   initFichas(planets);
   initScreensaver();
   initOrbitDay();

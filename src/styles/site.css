@@ -128,12 +128,13 @@ body { margin: 0; min-height: 100vh; }
 .cosmos__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
 .cosmos__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .cosmos__warp path { fill: none; stroke-width: 1; }
-.cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-7); padding-bottom: var(--space-5); text-align: center; }
+/* The welcome is kept compact so the grid gets the room. */
+.cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-2); padding-top: var(--space-5); padding-bottom: var(--space-2); text-align: center; }
 .chart__title { font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; letter-spacing: -0.01em; max-width: 26ch; }
 .chart__lead { max-width: 40ch; }
 /* Readout and magnitudes: at the top, under the welcome. */
-.cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-3); pointer-events: none; }
-.cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-6) var(--gutter) 0; }
+.cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-2); pointer-events: none; }
+.cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-5) var(--gutter) 0; }
 .cosmos__bridge { height: clamp(460px, 64vh, 640px); }
 /* The lower space: its top is the flare (the bridge opening out); the outer spaces sit below it, on the straight grid. */
 .cosmos__lower { scroll-margin-top: -120px; position: relative; z-index: 2; min-height: clamp(640px, 86vh, 900px); display: grid; align-content: start; justify-items: center; gap: var(--space-5); padding-top: clamp(220px, 30vh, 300px); padding-bottom: var(--space-8); }
@@ -198,11 +199,13 @@ body { margin: 0; min-height: 100vh; }
 /* The ships fly scattered over the lower space's straight grid, like the stars above: the ship
    centred on its point, name and address to its right. */
 .outer__field { position: relative; list-style: none; margin: 0; padding: 0; width: calc(100% - 2 * var(--gutter)); height: clamp(420px, 56vh, 580px); }
-.outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; }
+/* Ships patrol their grid: cosmos.ts moves each spot a step along a grid axis at a time (the
+   transform), turning the hull to its heading (--heading). */
+.outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; transition: transform 2.6s var(--ease-in-out); }
 .outer__link { position: absolute; top: 0; left: 0; transform: translate(-19px, -50%); display: inline-flex; align-items: center; gap: var(--space-3); padding: 8px 10px; border-radius: var(--radius-control); white-space: nowrap; }
 .stoico a.outer__link { text-decoration: none; color: var(--fg); }
-.outer__ship { display: grid; color: var(--fg); transition: transform var(--dur-base) var(--ease-out); }
-.outer__link:hover .outer__ship, .outer__link:focus-visible .outer__ship { transform: translateY(-3px); }
+.outer__ship { display: grid; color: var(--fg); transform: rotate(var(--heading, 0deg)); transition: transform 0.6s var(--ease-out); }
+.outer__link:hover .outer__ship, .outer__link:focus-visible .outer__ship { transform: rotate(var(--heading, 0deg)) scale(1.15); }
 .ship svg { display: block; }
 .outer__label { display: grid; gap: 2px; }
 .outer__name { font: 500 15px/1.2 var(--font-sans); letter-spacing: -0.005em; }
@@ -210,7 +213,7 @@ body { margin: 0; min-height: 100vh; }
 .outer__link .st-icon-svg { color: var(--fg-subtle); opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
 .outer__link:hover .st-icon-svg, .outer__link:focus-visible .st-icon-svg { opacity: 1; transform: translate(2px, -2px); }
 .outer__link:hover .outer__handle, .outer__link:focus-visible .outer__handle { color: var(--fg-muted); }
-@media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } }
+@media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } .outer__spot { transition: none; transform: none !important; } }
 
 /* ASCIIGen player (AsciiAnimation.astro + ascii.ts): the exported grid at 10px, line-height 1,
    no letter-spacing, transparent, scaled to the box's width by the script. */
