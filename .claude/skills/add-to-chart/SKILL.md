@@ -34,8 +34,11 @@ to add content.
      (an application or a whole system someone uses) or `creavis` (themes, music,
      audiovisual). If it's unclear, ask.
    - `status`: `live` (usable now), `wip` (in progress) or `soon` (announced).
+   - `archive`: `true` for finished work the user rarely touches (it goes past the bridge, to
+     the archive); `false` for featured or still-forming work (a star in my space). Ask if unsure.
    - Links: at least one of `demo`, `github`, `more`.
-3. Place the star near its constellation's other stars (look at their `x` / `y`):
+3. Place the star near its constellation's other stars (look at their `x` / `y`; archived
+   projects ignore them, the archive lays its vstros out in a row):
    - `y` ≤ 66.6 (the −20° floor).
    - At least ~8 units from any other star, so labels don't collide.
    - `side: left` only if `x` > ~80.
@@ -49,7 +52,8 @@ to add content.
 2. `order` is the highest in use plus one. `handle` is the address without `https://`.
 3. `ship`: prefer a hull no other space flies. If all five are taken and the user wants a
    new one, draw it (below).
-4. `x` ≤ 78 and `y` 0–100, at least ~12 units from the other ships.
+4. `x` 4–92 and `y` 0–100 (the band under the −20° line, where the ship starts), ~16 units
+   from the other ships. The ship explores from there on its own.
 5. Run `npm run build`.
 
 ## A ship hull
@@ -77,7 +81,6 @@ Start from the blank hull in `docs/assets.md`, "Drawing a new ship".
 2. If you moved a star or ship, look at it on a wide screen (≥860px) with `npm run dev`:
    - no label overlaps another;
    - nothing sits below the dashed −20° line;
-   - the new ship doesn't sit on another one's patrol (ships drift up to two half-cells from
-     their post).
+   - the new ship's post doesn't sit on another ship's (they set out from there to explore).
 3. If you changed how something is made (a new rule, a new field, a new hull convention),
    update `docs/assets.md` and the templates in the same change, so the next agent can repeat it.

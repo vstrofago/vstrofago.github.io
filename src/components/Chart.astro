@@ -40,11 +40,12 @@ const lines = constellations.flatMap((c) =>
     return a && b ? [{ a, b }] : [];
   }),
 );
-// My space's stars are the brightest things on the page, a size up from the ships (18px).
-const size = { live: 27, wip: 18, soon: 14 } as const;
+// Every star is one size, a size up from the ships (18px): brightness, not size, says how
+// finished a project is (live full, in progress dimmer, soon faint; see site.css).
+const size = { live: 27, wip: 27, soon: 27 } as const;
 // The phones' sketch: the stars smaller, and a still dust of background stars (deterministic,
 // so every build draws the same sky).
-const sketchSize = { live: 9, wip: 7, soon: 5 } as const;
+const sketchSize = { live: 9, wip: 9, soon: 9 } as const;
 const dust = Array.from({ length: 56 }, (_, i) => {
   const r = (salt: number) => {
     let h = 2166136261 ^ salt;
@@ -90,8 +91,8 @@ const words = {
       <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>
       <ul class="chart__legend">
         <li><span class="star--live"><Mark size={12} /></span>{t('status.live')}</li>
-        <li><span class="star--wip"><Mark size={10} /></span>{t('status.wip')}</li>
-        <li><span class="star--soon"><Mark size={8} /></span>{t('status.soon')}</li>
+        <li><span class="star--wip"><Mark size={12} /></span>{t('status.wip')}</li>
+        <li><span class="star--soon"><Mark size={12} /></span>{t('status.soon')}</li>
       </ul>
     </div>
   </div>
@@ -126,17 +127,26 @@ const words = {
             </li>
           ))}
         </ol>
-        <!-- The outer spaces: each ship sets out from under the −20° line and explores the space. -->
+        <!-- The outer spaces: each ship sets out from under the −20° line and explores the space. Its
+             name sits under it; a click on the ship reveals its address, the link (always shown
+             without JS). -->
         <ul class="outer__field" id="outer" aria-label={t('nav.elsewhere')}>
           {outer.map((s, i) => (
             <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
-              <a class="outer__link" href={s.url} rel="noopener" data-outer-exit data-readout={`CH ${String(i + 1).padStart(2, '0')} · ${s.name[lang]} · ${s.handle}`}>
+              <button
+                class="outer__ship-btn"
+                type="button"
+                aria-expanded="false"
+                aria-controls={`ship-${s.id}`}
+                data-outer-exit
+                data-readout={`CH ${String(i + 1).padStart(2, '0')} · ${s.name[lang]} · ${s.handle}`}
+              >
                 <Ship kind={s.ship} size={18} class="outer__ship" />
-                <span class="outer__label">
-                  <span class="outer__name">{s.name[lang]}</span>
-                  <span class="outer__handle">{s.handle}</span>
-                </span>
-                <Icon name="arrow-up-right" size={14} />
+                <span class="outer__name">{s.name[lang]}</span>
+              </button>
+              <a class="outer__go" id={`ship-${s.id}`} href={s.url} rel="noopener">
+                <span class="outer__handle">{s.handle}</span>
+                <Icon name="arrow-up-right" size={12} />
               </a>
             </li>
           ))}

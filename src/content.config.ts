@@ -98,7 +98,7 @@ const spaces = defineCollection({
       handle: z.string().trim().min(1),
       url: link,
       ship: z.enum(shipKinds),
-      x: z.number().min(0).max(78, { message: 'the label hangs to the right: keep x ≤ 78' }),
+      x: z.number().min(4).max(92, { message: 'the name sits under the ship: keep 4 ≤ x ≤ 92' }),
       y: z.number().min(0).max(100),
     })
     .transform((d) => ({

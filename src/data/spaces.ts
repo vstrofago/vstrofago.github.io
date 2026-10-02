@@ -2,13 +2,12 @@ import { getCollection } from 'astro:content';
 import type { Localized } from '../i18n/ui';
 import type { ShipKind } from './ships';
 
-// The outer spaces: the links in the plane's lower space, in the nav's menu and in the
+// The outer spaces: the links whose ships explore my space, in the nav's menu and in the
 // Registro. Each one is a Markdown file in src/content/spaces/ (template:
 // src/content/_templates/space.md; rules: src/content.config.ts; recipe: docs/assets.md),
 // read here at build time in `order`. A space without `url` renders without a link. `ship` is
-// the pixel ship it flies (src/data/ships.ts); `at` is where it flies in the lower space (0–100
-// from the top left of that space's field), scattered like the stars above; its name goes to
-// the right.
+// the pixel ship it flies (src/data/ships.ts); `at` is its post, where it starts: x 4–92 across
+// my space, y 0–100 down the band under the −20° line. Its name sits under it.
 
 export interface Space {
   id: string;

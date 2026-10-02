@@ -912,9 +912,10 @@ function initNavMenus(): void {
    `x` / `y` in src/content/spaces/, in the band under the −20° line), picks somewhere to go
    that is clear of the stars, their names and the other ships' destinations, turns toward it
    (never faster than a slow ship would), cruises there, slowing as it arrives, parks a few
-   seconds and sets off again. The hull turns with the heading; the name stays upright. Ships
-   fly under the stars, so a star is always clickable; a ship being pointed at or focused holds
-   still, so it's always easy to click. Back at their posts and still under reduced motion;
+   seconds and sets off again. The hull turns with the heading; the name under it stays upright.
+   Ships fly under the stars, so a star is always clickable; a ship being pointed at, focused or
+   opened holds still, so it's always easy to click. A click on a ship reveals its address (the
+   link) under its name; another click, Escape or a click elsewhere hides it. Back at their posts and still under reduced motion;
    paused offscreen, in hidden tabs and when the plane isn't shown.
    --------------------------------------------------------------------------------------------- */
 interface Box { l: number; t: number; r: number; b: number }
@@ -925,7 +926,7 @@ function initFleet(): void {
   if (!field || !sky) return;
   const spots = Array.from(field.querySelectorAll<HTMLElement>('.outer__spot'));
   if (!spots.length) return;
-  const SPEED = 30, TURN = 80, LABEL = 210, CLEAR = 22; // px/s, deg/s, a ship's name, margin
+  const SPEED = 30, TURN = 80, HALF = 70, CLEAR = 22; // px/s, deg/s, half a ship's name, margin
   const ships = spots.map((el) => ({
     el,
     hull: el.querySelector<HTMLElement>('.outer__ship'),
@@ -945,8 +946,8 @@ function initFleet(): void {
       return { l: r.left - f.left - CLEAR, t: r.top - f.top - CLEAR, r: r.right - f.left + CLEAR, b: r.bottom - f.top + CLEAR };
     });
   };
-  // A ship parked at (x, y) takes its hull and its name to the right.
-  const shipBox = (x: number, y: number): Box => ({ l: x - 22, t: y - 22, r: x + LABEL, b: y + 22 });
+  // A ship parked at (x, y): its hull, its name under it, and room for its address.
+  const shipBox = (x: number, y: number): Box => ({ l: x - HALF, t: y - 18, r: x + HALF, b: y + 54 });
   const hit = (a: Box, b: Box): boolean => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
 
   const pick = (i: number): { x: number; y: number } | null => {
@@ -959,7 +960,7 @@ function initFleet(): void {
       avoid.push(shipBox(o.el.offsetLeft + at.x, o.el.offsetTop + at.y));
     });
     for (let tries = 0; tries < 40; tries++) {
-      const ax = 24 + Math.random() * Math.max(1, W - LABEL - 36), ay = 26 + Math.random() * Math.max(1, H - 52);
+      const ax = HALF + 12 + Math.random() * Math.max(1, W - 2 * HALF - 24), ay = 24 + Math.random() * Math.max(1, H - 84);
       const d = Math.hypot(ax - (hx + s.x), ay - (hy + s.y));
       if (d < 140 || d > 560) continue;
       if (avoid.some((b) => hit(shipBox(ax, ay), b))) continue;
@@ -981,7 +982,7 @@ function initFleet(): void {
     if (!visible || document.hidden || field.offsetParent === null) return;
     if (reduced()) { if (ships.some((s) => s.x || s.y)) home(); return; }
     ships.forEach((s, i) => {
-      if (s.el.matches(':hover') || s.el.contains(document.activeElement)) return;
+      if (s.el.matches(':hover') || s.el.contains(document.activeElement) || s.el.classList.contains('is-open')) return;
       if (!s.to) {
         if (now < s.rest) return;
         s.to = pick(i);
@@ -1003,6 +1004,30 @@ function initFleet(): void {
     });
   };
   requestAnimationFrame(frame);
+
+  // A click on a ship shows its address; one ship at a time.
+  const shut = (except?: HTMLElement): void => ships.forEach(({ el }) => {
+    if (el === except) return;
+    el.classList.remove('is-open');
+    el.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false');
+  });
+  ships.forEach(({ el }) => {
+    const btn = el.querySelector<HTMLButtonElement>('.outer__ship-btn');
+    btn?.addEventListener('click', () => {
+      const open = !el.classList.contains('is-open');
+      shut(el);
+      el.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+  document.addEventListener('click', (e) => { if (!(e.target as Element).closest('.outer__spot')) shut(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = ships.find(({ el }) => el.classList.contains('is-open'));
+    if (!open) return;
+    shut();
+    open.el.querySelector<HTMLElement>('.outer__ship-btn')?.focus();
+  });
 }
 
 export function initCosmos(): void {
