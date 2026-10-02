@@ -1,11 +1,12 @@
 ---
-// Wide screens: the page doesn't scroll. The plane shows one space at a time: mine (a short
-// welcome, the coordinate readout and magnitudes, then every project a star, sized by magnitude
-// (live bright, in progress pulsing, soon faint), joined into the three fixed constellations of
-// their field: Automata, Systemis, Creavis) or the outer spaces (the links, each flying its pixel
-// ship). An Einstein–Rosen bridge joins them: cosmos.ts draws the grid bent into a mouth near
-// its top right corner (or, in the tabs prototype, a tab strip) and crossing pulls the space into
-// it and out into the other. Stars and spaces are one file each in src/content/.
+// Wide screens: the page doesn't scroll. The plane is a map, dragged sideways with the mouse
+// (or a trackpad, the wheel, the arrow keys, or the tabs at its foot, which glide there): on the
+// left my space (a short welcome, the coordinate readout and magnitudes, then every project a
+// star, sized by magnitude (live bright, in progress pulsing, soon faint), joined into the three
+// fixed constellations of their field: Automata, Systemis, Creavis); in the middle an
+// Einstein–Rosen bridge, the grid's rows converging into a mouth, through a wireframe throat and
+// out of another; on the right, the outer spaces (the links), each flying its pixel ship.
+// cosmos.ts draws the grid and the bridge. Stars and spaces are one file each in src/content/.
 // Stars open their card (Fichas.astro); without JS they link to the Registro rows, and both
 // spaces stack on one scrolling page, so nothing is out of reach.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
@@ -47,11 +48,10 @@ const dust = Array.from({ length: 56 }, (_, i) => {
 });
 const outer = spaces.filter((s) => s.url);
 ---
-<section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-portal="corner" data-bridge={JSON.stringify(bridge)}>
+<section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-bridge={JSON.stringify(bridge)} style={`--bridge:${bridge.width}`}>
   <div class="cosmos__field" data-parallax-layer aria-hidden="true">
     <canvas class="cosmos__stars-bg" data-starfield></canvas>
   </div>
-  <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
 
   <div class="cosmos__sketch" aria-hidden="true">
     <svg class="sketch__lines" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">
@@ -64,6 +64,9 @@ const outer = spaces.filter((s) => s.url);
       {stars.map(({ p, at }) => <li class={`sketch__star sketch__star--${p.status}`} style={`--x:${at.x};--y:${at.y}`}><Mark size={sketchSize[p.status]} /></li>)}
     </ul>
   </div>
+
+  <div class="cosmos__world" data-world>
+  <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
 
   <div class="cosmos__space cosmos__space--here" id="here" data-space="here" tabindex="-1" aria-labelledby="chart-title">
     <div class="cosmos__intro container" data-reveal>
@@ -107,10 +110,9 @@ const outer = spaces.filter((s) => s.url);
       </ol>
     </div>
 
-    <button class="portal" type="button" data-portal-go="outer" aria-label={t('portal.toOuter')} hidden>
-      <span class="portal__caption" aria-hidden="true">{t('nav.elsewhere')}</span>
-    </button>
   </div>
+
+  <div class="cosmos__bridge" aria-hidden="true" data-bridge-zone></div>
 
   <div class="cosmos__space cosmos__space--outer" id="outer" data-space="outer" data-outer tabindex="-1" aria-labelledby="outer-title">
     <div class="cosmos__intro container">
@@ -131,13 +133,16 @@ const outer = spaces.filter((s) => s.url);
         </li>
       ))}
     </ul>
-    <button class="portal" type="button" data-portal-go="here" aria-label={t('portal.toHere')} hidden>
-      <span class="portal__caption" aria-hidden="true">{t('space.here')}</span>
-    </button>
   </div>
 
-  <div class="cosmos__tabs" role="tablist" aria-label={t('space.tabs')} data-space-tabs hidden>
-    <button class="hud__tab" type="button" role="tab" aria-controls="here" aria-selected="true">{t('space.here')}</button>
-    <button class="hud__tab" type="button" role="tab" aria-controls="outer" aria-selected="false" tabindex="-1">{t('nav.elsewhere')}</button>
+  <div class="bridge__ghosts" aria-hidden="true">
+    {outer.map(() => <span class="bridge__ghost"><Mark size={7} /></span>)}
+  </div>
+  </div>
+
+  <div class="cosmos__tabs" data-map-tabs hidden>
+    <span class="cosmos__hint" aria-hidden="true">{t('map.hint')}</span>
+    <button class="hud__tab" type="button" data-map-go="here" aria-label={`${t('map.go')}: ${t('space.here')}`}>{t('space.here')}</button>
+    <button class="hud__tab" type="button" data-map-go="outer" aria-label={`${t('map.go')}: ${t('nav.elsewhere')}`}>{t('nav.elsewhere')}</button>
   </div>
 </section>
