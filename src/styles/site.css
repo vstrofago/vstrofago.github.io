@@ -177,18 +177,10 @@ body { margin: 0; min-height: 100vh; }
    left to right, into the other space's words (cosmos.ts). */
 [data-transmute] .tx-glyph { color: var(--fg-subtle); }
 
-/* The archive: each archived project a small, still planet on display, its name under it. */
-.archive__bodies { list-style: none; margin: 0; padding: 0; }
-.exhibit { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; z-index: 2; }
-.exhibit__link { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-2); border-radius: var(--radius-control); text-align: center; }
-.stoico a.exhibit__link { color: var(--fg); text-decoration: none; }
-.exhibit__planet { width: clamp(150px, 14vw, 210px); height: clamp(150px, 14vw, 210px); transition: transform var(--dur-base) var(--ease-out); }
-.exhibit__link:hover .exhibit__planet, .exhibit__link:focus-visible .exhibit__planet { transform: scale(1.06); }
-.exhibit__label { display: grid; justify-items: center; gap: 4px; white-space: nowrap; }
-.exhibit__name { font: 500 14px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
-.exhibit__link:hover .exhibit__name, .exhibit__link:focus-visible .exhibit__name { color: var(--fg); }
-.exhibit__meta { font: 400 11px/1.3 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
-@media (prefers-reduced-motion: reduce) { .exhibit__planet { transition: none; } }
+/* The archive: each archived project a vstro on display, in a row; a little dimmer than the
+   stars in my space, its name under it. */
+.star--archived .star__label { top: calc(50% + 26px); left: 50%; transform: translateX(-50%); flex-direction: column; align-items: center; gap: 4px; }
+.star--archived .animation-mark { filter: none; opacity: 0.85; }
 
 .chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
@@ -197,7 +189,7 @@ body { margin: 0; min-height: 100vh; }
 
 /* A star: the glyph is centred on its point; the label hangs to one side. */
 .star { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; z-index: 2; }
-.star__link { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-control); color: var(--fg); }
+.star__link { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-control); color: var(--fg); }
 .star__glyph { position: relative; display: grid; place-items: center; transition: transform var(--dur-base) var(--ease-out); }
 .star__glyph::before { content: ""; position: absolute; inset: -9px; opacity: 0; transform: scale(1.35); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
   background:
@@ -211,7 +203,7 @@ body { margin: 0; min-height: 100vh; }
 .star__label { position: absolute; top: 50%; left: calc(100% - 4px); transform: translateY(-50%); display: inline-flex; align-items: baseline; gap: var(--space-2); white-space: nowrap; pointer-events: none; }
 .star--left .star__label { left: auto; right: calc(100% - 4px); flex-direction: row-reverse; }
 .star__id { font: 400 11px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
-.star__name { font: 500 14px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
+.star__name { font: 500 15px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
 .star__link:hover .star__name, .star__link:focus-visible .star__name { color: var(--fg); }
 
 /* Magnitude: live shines, in progress breathes, soon is barely there. Always with a word in the
@@ -252,22 +244,24 @@ body { margin: 0; min-height: 100vh; }
 /* The outer spaces: under the −20° line of my space (where no project sits), the ships fly
    scattered like the stars above: the ship
    centred on its point, name and address to its right. */
-.outer__field { position: absolute; left: 0; right: 0; top: calc(66.667% + 1px); bottom: 0; z-index: 2; list-style: none; margin: 0; padding: 0; }
+.outer__field { position: absolute; inset: 0; z-index: 1; list-style: none; margin: 0; padding: 0; pointer-events: none; }
 /* Ships patrol their grid: cosmos.ts moves each spot a step along a grid axis at a time (the
    transform), turning the hull to its heading (--heading). */
-.outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; transition: transform 2.6s var(--ease-in-out); }
-.outer__link { position: absolute; top: 0; left: 0; transform: translate(-19px, -50%); display: inline-flex; align-items: center; gap: var(--space-3); padding: 8px 10px; border-radius: var(--radius-control); white-space: nowrap; }
+/* A ship's post (its x / y) is in the band under the −20° line; cosmos.ts flies it from there. */
+.outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(66.667% + var(--y) * 0.33333%); width: 0; height: 0; }
+.outer__link { position: absolute; top: 0; left: 0; transform: translate(-19px, -50%); pointer-events: auto; display: inline-flex; align-items: center; gap: var(--space-3); padding: 8px 10px; border-radius: var(--radius-control); white-space: nowrap; }
 .stoico a.outer__link { text-decoration: none; color: var(--fg); }
-.outer__ship { display: grid; color: var(--fg); transform: rotate(var(--heading, 0deg)); transition: transform 0.6s var(--ease-out); }
+.outer__ship { display: grid; color: var(--fg); transform: rotate(var(--heading, 0deg)); }
 .outer__link:hover .outer__ship, .outer__link:focus-visible .outer__ship { transform: rotate(var(--heading, 0deg)) scale(1.15); }
 .ship svg { display: block; }
 .outer__label { display: grid; gap: 2px; }
-.outer__name { font: 500 15px/1.2 var(--font-sans); letter-spacing: -0.005em; }
+.outer__name { font: 500 13px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); }
+.outer__link:hover .outer__name, .outer__link:focus-visible .outer__name { color: var(--fg); }
 .outer__handle { font: 400 11px/1.3 var(--font-mono); color: var(--fg-subtle); }
 .outer__link .st-icon-svg { color: var(--fg-subtle); opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
 .outer__link:hover .st-icon-svg, .outer__link:focus-visible .st-icon-svg { opacity: 1; transform: translate(2px, -2px); }
 .outer__link:hover .outer__handle, .outer__link:focus-visible .outer__handle { color: var(--fg-muted); }
-@media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } .outer__spot { transition: none; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .w-merid:not(.w-throat--back) { animation: none; } .bridge__ghosts { display: none; } .outer__spot { transform: none !important; } }
 
 /* ASCIIGen player (AsciiAnimation.astro + ascii.ts): the exported grid at 10px, line-height 1,
    no letter-spacing, transparent, scaled to the box's width by the script. */

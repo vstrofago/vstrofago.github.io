@@ -4,10 +4,10 @@
 // the arrow keys, or the tabs at its foot, which glide there). On the left, my space: every
 // featured or still-forming project a star, sized by magnitude (live bright, in progress
 // pulsing, soon faint), joined into the constellation of its field (Automata, Systemis,
-// Creavis), and under the −20° line the outer spaces (the links), each a pixel ship on patrol.
+// Creavis), and the outer spaces (the links), each a pixel ship exploring it.
 // In the middle an Einstein–Rosen bridge: the grid's rows converge into a mouth, run through a
 // wireframe throat and flare out of another. On the right, the archive: the archived projects
-// as still planets on display. When the map crosses the bridge, the welcome rewrites itself,
+// as vstros on display, in a row. When the map crosses the bridge, the welcome rewrites itself,
 // like a terminal, into the archive's. cosmos.ts draws the grid and the bridge and moves the map.
 // Stars, planets and ships are one file each in src/content/; they open their card
 // (Fichas.astro) or go to their link. Without JS the stars link to the Registro rows, and both
@@ -29,7 +29,7 @@ const t = useTranslations(lang);
 
 const stars = projects.map((p) => ({ p, id: p.catalog, at: p.place }));
 const here = stars.filter((s) => !s.p.archived);
-// The archive is a display case: its planets in one row across the middle, in catalog order,
+// The archive is a display case: its vstros in one row across the middle, in catalog order,
 // evenly spaced (a file's x / y place its star in my space, not here).
 const archived = stars.filter((s) => s.p.archived).map((s, i, all) => ({ ...s, spot: { x: ((i + 1) / (all.length + 1)) * 100, y: 40 } }));
 const byId = new Map(stars.map((s) => [s.p.id, s.at]));
@@ -40,7 +40,8 @@ const lines = constellations.flatMap((c) =>
     return a && b ? [{ a, b }] : [];
   }),
 );
-const size = { live: 18, wip: 14, soon: 9 } as const;
+// My space's stars are the brightest things on the page, a size up from the ships (18px).
+const size = { live: 27, wip: 18, soon: 14 } as const;
 // The phones' sketch: the stars smaller, and a still dust of background stars (deterministic,
 // so every build draws the same sky).
 const sketchSize = { live: 9, wip: 7, soon: 5 } as const;
@@ -125,7 +126,7 @@ const words = {
             </li>
           ))}
         </ol>
-        <!-- The outer spaces: under the −20° line, where no project sits, each ship on patrol. -->
+        <!-- The outer spaces: each ship sets out from under the −20° line and explores the space. -->
         <ul class="outer__field" id="outer" aria-label={t('nav.elsewhere')}>
           {outer.map((s, i) => (
             <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
@@ -148,30 +149,19 @@ const words = {
     <div class="cosmos__space cosmos__space--archive" id="archive" data-space="archive" tabindex="-1" aria-labelledby="archive-title">
       <h2 id="archive-title" class="cosmos__plane-title st-label">{t('space.archive')}</h2>
       <div class="cosmos__upper cosmos__upper--archive" data-sky>
-        <ol class="archive__bodies">
-          {archived.map(({ p, id, at, spot }) => (
-            <li class="exhibit" style={`--x:${spot.x};--y:${spot.y}`}>
+        <ol class="chart__stars archive__stars" aria-label={t('space.archive')}>
+          {archived.map(({ p, id, spot }) => (
+            <li class:list={['star', 'star--archived', `star--${p.status}`]} style={`--x:${spot.x};--y:${spot.y}`}>
               <a
-                class="exhibit__link"
+                class="star__link"
                 href={`#${id.toLowerCase()}`}
                 data-star={id.toLowerCase()}
                 data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${planetLabel[p.status]}`}
               >
-                <canvas
-                  class="planet exhibit__planet"
-                  aria-hidden="true"
-                  data-planet={p.id}
-                  data-status={p.status}
-                  data-kind={at.planet.kind}
-                  data-ring={at.planet.ring ? '' : undefined}
-                  data-moon={at.planet.moon ? '' : undefined}
-                  data-tilt={at.planet.tilt ?? 0}
-                  data-block-size="2"
-                ></canvas>
-                <span class="exhibit__label">
+                <span class="star__glyph"><Mark size={size[p.status]} /></span>
+                <span class="star__label">
                   <span class="star__id">{id}</span>
-                  <span class="exhibit__name">{(p.title ?? placeholder.title)[lang]}</span>
-                  <span class="exhibit__meta">{p.category[lang]} · {fields[p.field].name}</span>
+                  <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
                 </span>
               </a>
             </li>

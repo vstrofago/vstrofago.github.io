@@ -9,7 +9,7 @@
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
 //   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
 //   [data-nav-menu]       wide screens: Projects / Outer spaces drop a plain list
-//   .outer__field         the fleet: the outer spaces' ships patrol under the −20° line
+//   .outer__field         the fleet: the outer spaces' ships explore my space
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
@@ -440,7 +440,7 @@ function initOrbitDay(): void {
    The plane as a map, and its Einstein–Rosen bridge (wide screens). The page doesn't scroll:
    the welcome and the readout stay put while, under them, a world wider than the screen moves
    sideways: my space (the stars, and the ships under the −20° line), the bridge's zone, the
-   archive (still planets). Drag it with the mouse (it coasts a little when let go), or use a
+   archive (archived vstros on display). Drag it with the mouse (it coasts a little when let go), or use a
    trackpad, the wheel or the arrow keys; the tabs at its foot glide it to either side, so
    nobody has to drag. Focus landing on something out of view brings its side in. When the
    middle of the screen crosses the bridge, the welcome rewrites itself (see transmute()).
@@ -450,7 +450,7 @@ function initOrbitDay(): void {
    converge into a first mouth while its columns turn into rings, run through a slim
    hourglass throat (far side dashed, over a shadow) to a second mouth, and flare out into the
    archive. Ghost stars ride a row into the mouth, through the throat, out to each archived
-   planet (CSS offset-path); the throat's lines flow toward the archive, faster while the map
+   vstro (CSS offset-path); the throat's lines flow toward the archive, faster while the map
    moves or a ship is pointed at.
    Not drawn when the plane is hidden (phones use the Registro); without JS both sides stack on
    one scrolling page over a plain CSS grid.
@@ -503,7 +503,7 @@ function initBridge(): void {
   let geo: BridgeGeo;
   try { geo = JSON.parse(sec.dataset.bridge ?? ''); } catch { return; }
   const exits = Array.from(sec.querySelectorAll<HTMLElement>('[data-outer-exit]'));
-  const bodies = Array.from(archive.querySelectorAll<HTMLElement>('.exhibit__planet'));
+  const bodies = Array.from(archive.querySelectorAll<HTMLElement>('.star__glyph'));
   const ghosts = Array.from(sec.querySelectorAll<HTMLElement>('.bridge__ghost'));
   const tablist = sec.querySelector<HTMLElement>('[data-map-tabs]');
   const tabs = Array.from(sec.querySelectorAll<HTMLButtonElement>('[data-map-go]'));
@@ -742,7 +742,7 @@ function initBridge(): void {
     svg.setAttribute('viewBox', `0 0 ${r1(Wd)} ${r1(H)}`);
     svg.innerHTML = paths.join('') + labels.join('');
 
-    // Ghosts: along a row, into the mouth, through the throat, out to an archived planet.
+    // Ghosts: along a row, into the mouth, through the throat, out to an archived vstro.
     const wr = world.getBoundingClientRect();
     ghosts.forEach((el, i) => {
       const body = bodies[i];
@@ -908,57 +908,101 @@ function initNavMenus(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The fleet: the outer spaces' ships patrol their band, under the −20° line of my space. Every
-   1.1s one ship takes a step of half a grid cell across, or a third of the band up or down
-   (never diagonally), turning its hull to the heading; it never strays more than two steps
-   from its post (its `x` / `y` in src/content/spaces/), leaves the band, or comes too close to
-   another ship. A ship being pointed at or focused holds still, so it's always easy to click;
-   the others keep moving. Still under reduced motion, paused offscreen and in hidden tabs.
+   The fleet: the outer spaces' ships explore my space. Each one sets out from its post (its
+   `x` / `y` in src/content/spaces/, in the band under the −20° line), picks somewhere to go
+   that is clear of the stars, their names and the other ships' destinations, turns toward it
+   (never faster than a slow ship would), cruises there, slowing as it arrives, parks a few
+   seconds and sets off again. The hull turns with the heading; the name stays upright. Ships
+   fly under the stars, so a star is always clickable; a ship being pointed at or focused holds
+   still, so it's always easy to click. Back at their posts and still under reduced motion;
+   paused offscreen, in hidden tabs and when the plane isn't shown.
    --------------------------------------------------------------------------------------------- */
+interface Box { l: number; t: number; r: number; b: number }
+
 function initFleet(): void {
   const field = document.querySelector<HTMLElement>('.outer__field');
-  if (!field) return;
+  const sky = field?.closest<HTMLElement>('[data-sky]');
+  if (!field || !sky) return;
   const spots = Array.from(field.querySelectorAll<HTMLElement>('.outer__spot'));
   if (!spots.length) return;
-  const pos = spots.map(() => ({ gx: 0, gy: 0 }));
-  const RANGE = 2, GAP_X = 190, GAP_Y = 52, LABEL = 200;
-  const DIRS = [
-    { dx: 0, dy: -1, deg: 0 },
-    { dx: 1, dy: 0, deg: 90 },
-    { dx: 0, dy: 1, deg: 180 },
-    { dx: -1, dy: 0, deg: -90 },
-  ];
-  let visible = true;
+  const SPEED = 30, TURN = 80, LABEL = 210, CLEAR = 22; // px/s, deg/s, a ship's name, margin
+  const ships = spots.map((el) => ({
+    el,
+    hull: el.querySelector<HTMLElement>('.outer__ship'),
+    x: 0, y: 0, // offset from its post
+    deg: 0,
+    to: null as { x: number; y: number } | null,
+    rest: performance.now() + 600 + Math.random() * 3500,
+  }));
+  let visible = true, last = 0;
   watchVisibility(field, (v) => { visible = v; });
-  const home = (el: HTMLElement): { x: number; y: number } => ({ x: el.offsetLeft, y: el.offsetTop });
-  const tick = (): void => {
-    if (reduced() || !visible || document.hidden || getComputedStyle(field).display === 'none') return;
-    const W = field.clientWidth, H = field.clientHeight;
-    const sx = W / 24, sy = H / 3; // half a grid cell across, a third of the band down
-    const i = Math.floor(Math.random() * spots.length);
-    const el = spots[i];
-    if (el.matches(':hover') || el.contains(document.activeElement)) return;
-    const here = pos[i];
-    const options = DIRS.filter(({ dx, dy }) => {
-      const gx = here.gx + dx, gy = here.gy + dy;
-      if (Math.abs(gx) > RANGE || Math.abs(gy) > 1) return false;
-      const a = home(el);
-      const ax = a.x + gx * sx, ay = a.y + gy * sy;
-      if (ax < 12 || ax > W - LABEL || ay < 22 || ay > H - 22) return false;
-      return spots.every((o, j) => {
-        if (j === i) return true;
-        const b = home(o);
-        return Math.abs(b.x + pos[j].gx * sx - ax) > GAP_X || Math.abs(b.y + pos[j].gy * sy - ay) > GAP_Y;
-      });
+
+  // What a ship must not park on: every star of my space, with its name.
+  const obstacles = (): Box[] => {
+    const f = field.getBoundingClientRect();
+    return Array.from(sky.querySelectorAll<HTMLElement>('.star__link, .star__label, .chart__constellations li')).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { l: r.left - f.left - CLEAR, t: r.top - f.top - CLEAR, r: r.right - f.left + CLEAR, b: r.bottom - f.top + CLEAR };
     });
-    if (!options.length) return;
-    const d = options[Math.floor(Math.random() * options.length)];
-    here.gx += d.dx;
-    here.gy += d.dy;
-    el.style.setProperty('--heading', `${d.deg}deg`);
-    el.style.transform = `translate(${here.gx * sx}px, ${here.gy * sy}px)`;
   };
-  window.setInterval(tick, 1100);
+  // A ship parked at (x, y) takes its hull and its name to the right.
+  const shipBox = (x: number, y: number): Box => ({ l: x - 22, t: y - 22, r: x + LABEL, b: y + 22 });
+  const hit = (a: Box, b: Box): boolean => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+
+  const pick = (i: number): { x: number; y: number } | null => {
+    const s = ships[i], W = field.clientWidth, H = field.clientHeight;
+    const hx = s.el.offsetLeft, hy = s.el.offsetTop;
+    const avoid = obstacles();
+    ships.forEach((o, j) => {
+      if (j === i) return;
+      const at = o.to ?? { x: o.x, y: o.y };
+      avoid.push(shipBox(o.el.offsetLeft + at.x, o.el.offsetTop + at.y));
+    });
+    for (let tries = 0; tries < 40; tries++) {
+      const ax = 24 + Math.random() * Math.max(1, W - LABEL - 36), ay = 26 + Math.random() * Math.max(1, H - 52);
+      const d = Math.hypot(ax - (hx + s.x), ay - (hy + s.y));
+      if (d < 140 || d > 560) continue;
+      if (avoid.some((b) => hit(shipBox(ax, ay), b))) continue;
+      return { x: ax - hx, y: ay - hy };
+    }
+    return null;
+  };
+
+  const place = (s: (typeof ships)[number]): void => {
+    s.el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`;
+    s.hull?.style.setProperty('--heading', `${s.deg.toFixed(1)}deg`);
+  };
+  const home = (): void => ships.forEach((s) => { s.x = s.y = s.deg = 0; s.to = null; place(s); });
+
+  const frame = (now: number): void => {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.1, (now - (last || now)) / 1000);
+    last = now;
+    if (!visible || document.hidden || field.offsetParent === null) return;
+    if (reduced()) { if (ships.some((s) => s.x || s.y)) home(); return; }
+    ships.forEach((s, i) => {
+      if (s.el.matches(':hover') || s.el.contains(document.activeElement)) return;
+      if (!s.to) {
+        if (now < s.rest) return;
+        s.to = pick(i);
+        if (!s.to) { s.rest = now + 1500; return; }
+      }
+      const dx = s.to.x - s.x, dy = s.to.y - s.y, d = Math.hypot(dx, dy);
+      if (d < 6) { s.to = null; s.rest = now + 2500 + Math.random() * 5000; return; }
+      // Turn toward it (0° is up), no faster than TURN; cruise, slowing over the last 80px,
+      // and barely move until the nose points roughly the right way.
+      const want = (Math.atan2(dx, -dy) * 180) / Math.PI;
+      const diff = ((want - s.deg + 540) % 360) - 180;
+      s.deg += Math.max(-TURN * dt, Math.min(TURN * dt, diff));
+      const align = Math.max(0, Math.cos((diff * Math.PI) / 180));
+      const v = SPEED * Math.min(1, 0.25 + d / 80) * align * align;
+      const rad = (s.deg * Math.PI) / 180;
+      s.x += Math.sin(rad) * v * dt;
+      s.y += -Math.cos(rad) * v * dt;
+      place(s);
+    });
+  };
+  requestAnimationFrame(frame);
 }
 
 export function initCosmos(): void {
