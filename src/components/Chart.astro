@@ -1,13 +1,13 @@
 ---
-// The whole page is one plane (wide screens). A short welcome sits on it under the nav, with the
-// coordinate readout and the magnitudes just below; then the upper space: every project a
-// star, sized by magnitude (live bright, in progress pulsing, soon faint), joined into
-// the three fixed constellations of their field (Automata, Systemis, Creavis). Below it, in the middle of the page, the plane
-// sinks into a vertical Einstein–Rosen bridge (cosmos.ts draws the grid and the bridge to the
-// section's real size): the grid lines converge into a mouth, run down a wireframe throat and
-// flare out again into another space, where the outer spaces (the links) sit, on
-// the straight grid, each flying its pixel ship. Stars and spaces are one file each in src/content/.
-// Stars open their card (Fichas.astro); without JS they link to the Registro rows.
+// Wide screens: the page doesn't scroll. The plane shows one space at a time: mine (a short
+// welcome, the coordinate readout and magnitudes, then every project a star, sized by magnitude
+// (live bright, in progress pulsing, soon faint), joined into the three fixed constellations of
+// their field: Automata, Systemis, Creavis) or the outer spaces (the links, each flying its pixel
+// ship). An Einstein–Rosen bridge joins them: cosmos.ts draws the grid bent into a mouth near
+// its top right corner (or, in the tabs prototype, a tab strip) and crossing pulls the space into
+// it and out into the other. Stars and spaces are one file each in src/content/.
+// Stars open their card (Fichas.astro); without JS they link to the Registro rows, and both
+// spaces stack on one scrolling page, so nothing is out of reach.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
 // Behind the welcome there, a sketch of the same sky (grid, constellation lines, stars and some
 // dust), rendered at build time, faint and still: decoration only, never interactive.
@@ -47,7 +47,7 @@ const dust = Array.from({ length: 56 }, (_, i) => {
 });
 const outer = spaces.filter((s) => s.url);
 ---
-<section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-bridge={JSON.stringify(bridge)}>
+<section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-portal="corner" data-bridge={JSON.stringify(bridge)}>
   <div class="cosmos__field" data-parallax-layer aria-hidden="true">
     <canvas class="cosmos__stars-bg" data-starfield></canvas>
   </div>
@@ -65,55 +65,62 @@ const outer = spaces.filter((s) => s.url);
     </ul>
   </div>
 
-  <div class="cosmos__intro container" data-reveal>
-    <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
-    <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
+  <div class="cosmos__space cosmos__space--here" id="here" data-space="here" tabindex="-1" aria-labelledby="chart-title">
+    <div class="cosmos__intro container" data-reveal>
+      <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
+      <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
+    </div>
+
+    <div class="cosmos__bar container" aria-hidden="true">
+      <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>
+      <ul class="chart__legend">
+        <li><span class="star--live"><Mark size={12} /></span>{t('status.live')}</li>
+        <li><span class="star--wip"><Mark size={10} /></span>{t('status.wip')}</li>
+        <li><span class="star--soon"><Mark size={8} /></span>{t('status.soon')}</li>
+      </ul>
+    </div>
+
+    <div class="cosmos__upper" data-sky>
+      <svg class="chart__grid chart__grid--lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
+      </svg>
+      <ul class="chart__constellations" aria-hidden="true">
+        {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
+      </ul>
+      <ol class="chart__stars" aria-label={t('chart.stars')}>
+        {stars.map(({ p, id, at }) => (
+          <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
+            <a
+              class="star__link"
+              href={`#${id.toLowerCase()}`}
+              data-star={id.toLowerCase()}
+              data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
+            >
+              <span class="star__glyph"><Mark size={size[p.status]} /></span>
+              <span class="star__label">
+                <span class="star__id">{id}</span>
+                <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <button class="portal" type="button" data-portal-go="outer" aria-label={t('portal.toOuter')} hidden>
+      <span class="portal__caption" aria-hidden="true">{t('nav.elsewhere')}</span>
+    </button>
   </div>
 
-  <div class="cosmos__bar container" aria-hidden="true">
-    <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>
-    <ul class="chart__legend">
-      <li><span class="star--live"><Mark size={12} /></span>{t('status.live')}</li>
-      <li><span class="star--wip"><Mark size={10} /></span>{t('status.wip')}</li>
-      <li><span class="star--soon"><Mark size={8} /></span>{t('status.soon')}</li>
-    </ul>
-  </div>
-
-  <div class="cosmos__upper" data-sky>
-    <svg class="chart__grid chart__grid--lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
-    </svg>
-    <ul class="chart__constellations" aria-hidden="true">
-      {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
-    </ul>
-    <ol class="chart__stars" aria-label={t('chart.stars')}>
-      {stars.map(({ p, id, at }) => (
-        <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
-          <a
-            class="star__link"
-            href={`#${id.toLowerCase()}`}
-            data-star={id.toLowerCase()}
-            data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
-          >
-            <span class="star__glyph"><Mark size={size[p.status]} /></span>
-            <span class="star__label">
-              <span class="star__id">{id}</span>
-              <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
-            </span>
-          </a>
-        </li>
-      ))}
-    </ol>
-  </div>
-
-  <div class="cosmos__bridge" aria-hidden="true" data-bridge-zone></div>
-
-  <div class="cosmos__lower" id="outer" data-outer>
-    <p class="outer__legend" id="outer-legend">{t('nav.elsewhere')}</p>
-    <ul class="outer__field" aria-labelledby="outer-legend">
+  <div class="cosmos__space cosmos__space--outer" id="outer" data-space="outer" data-outer tabindex="-1" aria-labelledby="outer-title">
+    <div class="cosmos__intro container">
+      <h2 id="outer-title" class="display chart__title">{t('outer.title')}</h2>
+      <p class="text text--body-l text--muted chart__lead">{t('outer.lead')}</p>
+    </div>
+    <ul class="outer__field" aria-labelledby="outer-title">
       {outer.map((s) => (
         <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
-          <a class="outer__link" href={s.url} rel="noopener" data-hole-exit data-outer-exit>
+          <a class="outer__link" href={s.url} rel="noopener" data-outer-exit>
             <Ship kind={s.ship} size={18} class="outer__ship" />
             <span class="outer__label">
               <span class="outer__name">{s.name[lang]}</span>
@@ -124,9 +131,13 @@ const outer = spaces.filter((s) => s.url);
         </li>
       ))}
     </ul>
+    <button class="portal" type="button" data-portal-go="here" aria-label={t('portal.toHere')} hidden>
+      <span class="portal__caption" aria-hidden="true">{t('space.here')}</span>
+    </button>
   </div>
 
-  <div class="bridge__ghosts" aria-hidden="true">
-    {outer.map(() => <span class="bridge__ghost"><Mark size={7} /></span>)}
+  <div class="cosmos__tabs" role="tablist" aria-label={t('space.tabs')} data-space-tabs hidden>
+    <button class="hud__tab" type="button" role="tab" aria-controls="here" aria-selected="true">{t('space.here')}</button>
+    <button class="hud__tab" type="button" role="tab" aria-controls="outer" aria-selected="false" tabindex="-1">{t('nav.elsewhere')}</button>
   </div>
 </section>

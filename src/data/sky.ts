@@ -51,13 +51,13 @@ export const fields: Record<Field, { name: string; center: { x: number; y: numbe
   creavis: { name: 'Creavis', center: { x: 16, y: 50 }, at: { x: 9, y: 36 } },
 };
 
-/** The Einstein–Rosen bridge, drawn by cosmos.ts in the middle of the page, top to bottom:
- *  the grid is straight down to the bridge's zone (the gap between the upper space and the
- *  lower one), converges into a first mouth at `mouthA` of that zone, runs down a wireframe
- *  throat to a second mouth at `mouthB`, and flares out again until `flare` of the lower space
- *  (where the outer spaces sit), then runs straight on. `radius` is the mouths' radius as a
- *  fraction of the page's width (at most `maxRadius` px); `tilt` flattens the rings. */
-export const bridge = { mouthA: 0.46, mouthB: 0.9, flare: 0.32, radius: 0.1, maxRadius: 150, tilt: 0.3 };
+/** The Einstein–Rosen bridge, in 2D (wide screens). The page doesn't scroll: it shows one space
+ *  at a time, mine (the stars) or the outer spaces (the ships), and the bridge joins them.
+ *  cosmos.ts bends the grid into a mouth near its top right corner: the lines are pulled toward
+ *  it (`pull`, 0–1) and twisted (`twist`, radians) within `reach` grid cells, and rings flow
+ *  into it. The mouth sits on the grid line `col` cells from the right edge, `row` cells under
+ *  the grid's top. Crossing pulls the whole space into the mouth and out of the other one. */
+export const bridge = { col: 1, row: 1, reach: 1.5, pull: 0.82, twist: 0.45 };
 
 /** The −20° line, as y in the upper space: no project sits below it. */
 export const FLOOR_Y = (80 / 120) * 100;
