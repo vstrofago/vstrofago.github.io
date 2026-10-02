@@ -11,6 +11,8 @@ import { fields, fieldKeys, placeFor, catalogId, type Constellation, type Field,
 // - `status`: live (neutral badge with a dot) · wip (neutral badge) · soon (outline badge).
 //   Always a word, never colour alone: the site is black and white.
 // - `field`: which constellation the star joins (see `fieldKeys` in sky.ts).
+// - `archived`: rests past the bridge, in the archive, as a still planet (wide screens);
+//   otherwise a star in my space. Featured and still-forming work stays in my space.
 
 export type { ProjectStatus, Field };
 
@@ -30,6 +32,7 @@ export interface Project {
   tags?: string;
   status: ProjectStatus;
   field: Field;
+  archived: boolean;
   links: ProjectLink[];
   place: Place;
 }
@@ -61,9 +64,10 @@ export const projects: Project[] = entries.map(({ id, data }) => ({
   place: placeFor(id, data.field, data.place),
 }));
 
-/** One constellation per field; its stars are joined in catalog order. */
-export const constellations: Constellation[] = fieldKeys.map((f) => ({
-  name: fields[f].name,
-  at: fields[f].at,
-  members: projects.filter((p) => p.field === f).map((p) => p.id),
-}));
+/** One constellation per field; its stars are joined in catalog order. In my space only the
+ *  stars there join (the archive shows its planets on their own); a field with no star there
+ *  has no constellation. */
+export const constellations: Constellation[] = fieldKeys.flatMap((f) => {
+  const members = projects.filter((p) => p.field === f && !p.archived).map((p) => p.id);
+  return members.length ? [{ name: fields[f].name, at: fields[f].at, members }] : [];
+});

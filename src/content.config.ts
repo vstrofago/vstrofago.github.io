@@ -38,6 +38,7 @@ const projects = defineCollection({
       catalog: z.number().int().positive().describe('Catalog number: 1 → VS-001. Use the next free one; never reuse or renumber.'),
       field: z.enum(fieldKeys),
       status: z.enum(statuses),
+      archive: opt(z.boolean()),
       category_en: z.string().trim().min(1),
       category_es: z.string().trim().min(1),
       title_en: text,
@@ -72,6 +73,7 @@ const projects = defineCollection({
         catalog: d.catalog,
         field: d.field,
         status: d.status,
+        archived: d.archive ?? false,
         category: { en: d.category_en, es: d.category_es },
         title,
         description,
@@ -96,7 +98,7 @@ const spaces = defineCollection({
       handle: z.string().trim().min(1),
       url: link,
       ship: z.enum(shipKinds),
-      x: z.number().min(0).max(78, { message: 'the label hangs to the right: keep x ≤ 78' }),
+      x: z.number().min(4).max(92, { message: 'the name sits under the ship: keep 4 ≤ x ≤ 92' }),
       y: z.number().min(0).max(100),
     })
     .transform((d) => ({

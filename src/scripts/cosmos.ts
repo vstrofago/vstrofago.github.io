@@ -2,14 +2,14 @@
 // effect pauses offscreen or in a hidden tab and stills under prefers-reduced-motion).
 //
 //   [data-starfield]      faint fixed stars behind the chart; something unseen eats a few
-//   [data-cosmos]         the page-wide plane: its grid, and the vertical Einstein–Rosen bridge
+//   [data-cosmos]         the plane as a map: my space, a bridge, the archive; the welcome rewrites
 //   [data-sky]            the cursor readout: right ascension / declination, or the hovered star
 //   canvas[data-planet]   a procedural planet, dithered to 1 bit against the Bayer matrix
 //   [data-ficha]          the bodies' cards (<dialog>): opened from a star, a row, or each other
 //   [data-screensaver]    after a minute idle, a starfield; any input wakes the page
 //   [data-hud]            the on-board log: two tabs (bodies, exits) over one frame
 //   [data-nav-menu]       wide screens: Projects / Outer spaces drop a plain list
-//   .outer__field         the fleet: the outer spaces' ships patrol their grid
+//   .outer__field         the fleet: the outer spaces' ships explore my space
 //   [data-orbit-day]      "Day 0007": days since the site went up
 
 import { reduced, reducedQuery, watchVisibility, toRGB, BAYER4, mhash } from './stoico';
@@ -289,26 +289,28 @@ function attachPlanet(canvas: HTMLCanvasElement): PlanetControl {
    Chart readout: where the cursor is on the sky, or which star it is over.
    --------------------------------------------------------------------------------------------- */
 function initReadout(): void {
-  const sky = document.querySelector<HTMLElement>('[data-sky]');
   const out = document.querySelector<HTMLElement>('[data-readout-out]');
-  if (!sky || !out) return;
+  const skies = document.querySelectorAll<HTMLElement>('[data-sky]');
+  if (!skies.length || !out) return;
   const idle = out.dataset.idle ?? '';
   let pinned = false;
-  sky.addEventListener('pointermove', (e) => {
-    if (pinned) return;
-    const r = sky.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * 100;
-    const y = ((e.clientY - r.top) / r.height) * 100;
-    out.textContent = coordsOf(Math.max(0, Math.min(99.9, x)), Math.max(0, Math.min(100, y)));
-  });
-  sky.addEventListener('pointerleave', () => { if (!pinned) out.textContent = idle; });
-  sky.querySelectorAll<HTMLElement>('[data-readout]').forEach((star) => {
-    const show = (): void => { pinned = true; out.textContent = star.dataset.readout ?? ''; };
-    const hide = (): void => { pinned = false; out.textContent = idle; };
-    star.addEventListener('pointerenter', show);
-    star.addEventListener('pointerleave', hide);
-    star.addEventListener('focus', show);
-    star.addEventListener('blur', hide);
+  skies.forEach((sky) => {
+    sky.addEventListener('pointermove', (e) => {
+      if (pinned) return;
+      const r = sky.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width) * 100;
+      const y = ((e.clientY - r.top) / r.height) * 100;
+      out.textContent = coordsOf(Math.max(0, Math.min(99.9, x)), Math.max(0, Math.min(100, y)));
+    });
+    sky.addEventListener('pointerleave', () => { if (!pinned) out.textContent = idle; });
+    sky.querySelectorAll<HTMLElement>('[data-readout]').forEach((star) => {
+      const show = (): void => { pinned = true; out.textContent = star.dataset.readout ?? ''; };
+      const hide = (): void => { pinned = false; out.textContent = idle; };
+      star.addEventListener('pointerenter', show);
+      star.addEventListener('pointerleave', hide);
+      star.addEventListener('focus', show);
+      star.addEventListener('blur', hide);
+    });
   });
 }
 
@@ -435,131 +437,325 @@ function initOrbitDay(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The plane and its Einstein–Rosen bridge (wide screens). The whole section is one plane: its
-   grid (redrawn here to the section's real size, faint, cells a twelfth of the width) runs
-   straight down through the welcome and the upper space. In the bridge's zone, in the middle
-   of the page, the vertical lines converge with a few rings into a mouth, run down an
-   hourglass wireframe throat (far side dashed), and flare out past a second mouth into the
-   lower space, where the grid runs straight again: another space, holding the outer spaces.
-   Hour marks sit along the top, declination marks down the left of the upper space. Ghost
-   stars fall along a grid line, through the throat, to each outer space (CSS offset-path);
-   the throat's lines flow downward, faster while an outer space is pointed at.
-   Not drawn when the plane is hidden (phones use the Registro); without JS a plain CSS grid
-   shows instead.
+   The plane as a map, and its Einstein–Rosen bridge (wide screens). The page doesn't scroll:
+   the welcome and the readout stay put while, under them, a world wider than the screen moves
+   sideways: my space (the stars, and the ships under the −20° line), the bridge's zone, the
+   archive (archived vstros on display). Drag it with the mouse (it coasts a little when let go), or use a
+   trackpad, the wheel or the arrow keys; the tabs at its foot glide it to either side, so
+   nobody has to drag. Focus landing on something out of view brings its side in. When the
+   middle of the screen crosses the bridge, the welcome rewrites itself (see transmute()).
+   The grid (redrawn here to the world's real size, faint, cells a twelfth of the screen) has
+   hour marks along its top and declination marks down its left, on both sides. Its rows run
+   straight across my space, start to bend at its right edge (a hint that the map goes on),
+   converge into a first mouth while its columns turn into rings, run through a slim
+   hourglass throat (far side dashed, over a shadow) to a second mouth, and flare out into the
+   archive. Ghost stars ride a row into the mouth, through the throat, out to each archived
+   vstro (CSS offset-path); the throat's lines flow toward the archive, faster while the map
+   moves or a ship is pointed at.
+   Not drawn when the plane is hidden (phones use the Registro); without JS both sides stack on
+   one scrolling page over a plain CSS grid.
    --------------------------------------------------------------------------------------------- */
 interface Pt { x: number; y: number }
-interface BridgeGeo { mouthA: number; mouthB: number; flare: number; radius: number; maxRadius: number; tilt: number }
+interface BridgeGeo { width: number; lead: number; mouthA: number; mouthB: number; radius: number; tilt: number }
+type SpaceKey = 'here' | 'archive';
+
+const DECK_QUERY = '(min-width: 860px)';
+
+/** A terminal's rewrite: the glyphs settle left to right into the new words, each position
+ *  flickering through a few ASCII glyphs first. Ticks like the ASCII (70–90ms); instant under
+ *  reduced motion. A new call takes over from wherever the last one was. */
+const GLYPHS = '#%&*+=-/\\<>_|:;~^';
+function transmute(el: HTMLElement, to: string): void {
+  const prev = Number(el.dataset.txTimer ?? 0);
+  if (prev) window.clearInterval(prev);
+  const from = el.textContent ?? '';
+  if (reduced() || from === to) { el.textContent = to; return; }
+  const n = Math.max(from.length, to.length);
+  const settle = Array.from({ length: n }, (_, i) => 2 + Math.floor((i / n) * 12) + Math.floor(Math.random() * 3));
+  let frame = 0;
+  const esc = (c: string): string => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c);
+  const tick = (): void => {
+    frame++;
+    let html = '', done = true;
+    for (let i = 0; i < n; i++) {
+      const target = to[i] ?? '';
+      if (frame >= settle[i]) { html += esc(target); continue; }
+      done = false;
+      if (frame < settle[i] - 4) { html += esc(from[i] ?? ''); continue; }
+      html += target === ' ' || (!target && !from[i]) ? ' ' : `<span class="tx-glyph">${esc(GLYPHS[Math.floor(Math.random() * GLYPHS.length)])}</span>`;
+    }
+    el.innerHTML = html;
+    if (done) { window.clearInterval(timer); el.textContent = to; delete el.dataset.txTimer; }
+  };
+  const timer = window.setInterval(tick, 75);
+  el.dataset.txTimer = String(timer);
+  tick();
+}
 
 function initBridge(): void {
   const sec = document.querySelector<HTMLElement>('[data-cosmos]');
+  const world = sec?.querySelector<HTMLElement>('[data-world]');
   const svg = sec?.querySelector<SVGSVGElement>('svg[data-warp]');
-  const upper = sec?.querySelector<HTMLElement>('[data-sky]');
+  const upper = sec?.querySelector<HTMLElement>('[data-space="here"] [data-sky]');
   const zone = sec?.querySelector<HTMLElement>('[data-bridge-zone]');
-  const lower = sec?.querySelector<HTMLElement>('[data-outer]');
-  if (!sec || !svg || !upper || !zone || !lower) return;
+  const archive = sec?.querySelector<HTMLElement>('[data-space="archive"]');
+  if (!sec || !world || !svg || !upper || !zone || !archive) return;
   let geo: BridgeGeo;
   try { geo = JSON.parse(sec.dataset.bridge ?? ''); } catch { return; }
   const exits = Array.from(sec.querySelectorAll<HTMLElement>('[data-outer-exit]'));
+  const bodies = Array.from(archive.querySelectorAll<HTMLElement>('.star__glyph'));
   const ghosts = Array.from(sec.querySelectorAll<HTMLElement>('.bridge__ghost'));
+  const tablist = sec.querySelector<HTMLElement>('[data-map-tabs]');
+  const tabs = Array.from(sec.querySelectorAll<HTMLButtonElement>('[data-map-go]'));
+  const head = sec.querySelector<HTMLElement>('[data-words]');
+  let words: Record<SpaceKey, { title: string; lead: string }> | null = null;
+  try { words = JSON.parse(head?.dataset.words ?? ''); } catch { words = null; }
+  const deck = window.matchMedia?.(DECK_QUERY);
   const r1 = (n: number): string => n.toFixed(1);
   const ease = (t: number): number => { const c = Math.max(0, Math.min(1, t)); return c * c * (3 - 2 * c); };
-  const top = (el: HTMLElement): number => el.getBoundingClientRect().top - sec.getBoundingClientRect().top;
+  const isDeck = (): boolean => !!deck?.matches && getComputedStyle(upper).display !== 'none';
+  const view = (): HTMLElement => world.parentElement ?? sec;
 
+  /* ---- The pan ---- */
+  let x = 0, glide = 0, coast = 0, calm = 0;
+  let side: SpaceKey = 'here';
+  const maxX = (): number => Math.max(0, world.offsetWidth - view().clientWidth);
+  const spot = (k: SpaceKey): number => (k === 'here' ? 0 : Math.min(maxX(), archive.offsetLeft));
+  const moving = (): void => {
+    sec.classList.add('is-pulling');
+    window.clearTimeout(calm);
+    calm = window.setTimeout(() => sec.classList.remove('is-pulling'), 400);
+  };
+  const set = (to: number): void => {
+    x = Math.max(0, Math.min(maxX(), to));
+    world.style.transform = isDeck() ? `translate3d(${r1(-x)}px, 0, 0)` : '';
+    // The side nearer the middle of the screen is the one on show: its tab is pressed and the
+    // welcome speaks for it.
+    // Without the map (phones, narrow windows) it is always my space.
+    const now: SpaceKey = !isDeck() || x + view().clientWidth / 2 < zone.offsetLeft + zone.offsetWidth / 2 ? 'here' : 'archive';
+    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.mapGo === now)));
+    if (now !== side) {
+      side = now;
+      if (words && head) {
+        head.querySelectorAll<HTMLElement>('[data-transmute]').forEach((el) => {
+          const k = el.dataset.transmute === 'title' ? 'title' : 'lead';
+          transmute(el, words![now][k]);
+        });
+      }
+    }
+  };
+  const stop = (): void => { cancelAnimationFrame(glide); cancelAnimationFrame(coast); glide = coast = 0; };
+  const glideTo = (to: number): void => {
+    stop();
+    const from = x, end = Math.max(0, Math.min(maxX(), to));
+    if (reduced() || Math.abs(end - from) < 1) { set(end); return; }
+    const dur = Math.min(1300, 450 + Math.abs(end - from) * 0.3), t0 = performance.now();
+    const frame = (now: number): void => {
+      const u = Math.min(1, (now - t0) / dur);
+      set(from + (end - from) * (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2));
+      moving();
+      glide = u < 1 ? requestAnimationFrame(frame) : 0;
+    };
+    glide = requestAnimationFrame(frame);
+  };
+  const go = (k: SpaceKey, animate = true): void => { if (animate) glideTo(spot(k)); else { stop(); set(spot(k)); } };
+
+  // Drag: a press that moves more than a few pixels pans the map and swallows the click that
+  // follows, so letting go over a star doesn't open its card. Let go, and it coasts to a stop.
+  let press: { id: number; x0: number; at: number; dragged: boolean; vx: number; t: number } | null = null;
+  let swallow = false;
+  window.addEventListener('click', (c) => { if (swallow) { swallow = false; c.preventDefault(); c.stopPropagation(); } }, true);
+  sec.addEventListener('pointerdown', (e) => {
+    if (!isDeck() || e.button !== 0 || (e.target as Element).closest('[data-map-tabs], dialog')) return;
+    stop();
+    press = { id: e.pointerId, x0: e.clientX, at: x, dragged: false, vx: 0, t: performance.now() };
+  });
+  sec.addEventListener('pointermove', (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    const dx = e.clientX - press.x0;
+    if (!press.dragged && Math.abs(dx) > 5) {
+      press.dragged = true;
+      sec.setPointerCapture(e.pointerId);
+      sec.classList.add('is-dragging');
+    }
+    if (!press.dragged) return;
+    const now = performance.now(), prev = x;
+    set(press.at - dx);
+    press.vx = 0.8 * ((x - prev) / Math.max(1, now - press.t)) + 0.2 * press.vx;
+    press.t = now;
+    moving();
+  });
+  const release = (e: PointerEvent): void => {
+    if (!press || e.pointerId !== press.id) return;
+    const p = press;
+    press = null;
+    if (!p.dragged) return;
+    sec.classList.remove('is-dragging');
+    swallow = true;
+    window.setTimeout(() => { swallow = false; }, 0);
+    if (reduced()) return;
+    let v = p.vx * 16; // px per frame
+    const frame = (): void => {
+      v *= 0.92;
+      set(x + v);
+      moving();
+      coast = Math.abs(v) > 0.3 && x > 0 && x < maxX() ? requestAnimationFrame(frame) : 0;
+    };
+    coast = requestAnimationFrame(frame);
+  };
+  sec.addEventListener('pointerup', release);
+  sec.addEventListener('pointercancel', release);
+
+  // A trackpad's sideways swipe or the wheel move the map too.
+  sec.addEventListener('wheel', (e) => {
+    if (!isDeck() || e.ctrlKey) return;
+    e.preventDefault();
+    stop();
+    set(x + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY));
+    moving();
+  }, { passive: false });
+
+  // Arrow keys, while nothing that uses them has focus.
+  document.addEventListener('keydown', (e) => {
+    if (!isDeck() || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.metaKey || e.ctrlKey) return;
+    const el = document.activeElement;
+    if (el && el !== document.body && !el.matches('[data-space], [data-cosmos]') && !el.closest('[data-world]')) return;
+    if (document.querySelector('dialog[open]')) return;
+    e.preventDefault();
+    glideTo(x + (e.key === 'ArrowRight' ? 1 : -1) * view().clientWidth * 0.3);
+  });
+
+  // Focus that lands out of view (tabbing through the stars, ships and planets) brings its side
+  // in. The browser scrolls the clipped viewport itself to show it; that scroll is undone and
+  // the map glides there instead.
+  const reveal = (el: Element | null): void => {
+    if (!isDeck() || press || !el || !world.contains(el)) return;
+    const r = el.getBoundingClientRect(), v = view().getBoundingClientRect();
+    if (r.left >= v.left && r.right <= v.right) return;
+    go(archive.contains(el) ? 'archive' : 'here', !reduced());
+  };
+  [sec, view()].forEach((box) => box.addEventListener('scroll', () => {
+    if (!box.scrollLeft && !box.scrollTop) return;
+    box.scrollLeft = 0;
+    box.scrollTop = 0;
+    reveal(document.activeElement);
+  }));
+  world.addEventListener('focusin', (e) => reveal(e.target as Element));
+
+  tabs.forEach((t) => t.addEventListener('click', () => go(t.dataset.mapGo as SpaceKey)));
+  // The nav and the Registro's links glide there too (#here, #archive, a card's #vs-…).
+  document.addEventListener('cosmos:go', (e) => {
+    const d = (e as CustomEvent<{ to: SpaceKey; animate?: boolean }>).detail;
+    go(d.to, d.animate ?? true);
+  });
+  window.addEventListener('hashchange', () => {
+    const to = decodeURIComponent(location.hash.slice(1));
+    if (to === 'archive' || to === 'here') go(to);
+  });
+
+  /* ---- The grid and the bridge ---- */
+  const top = (el: HTMLElement): number => el.getBoundingClientRect().top - world.getBoundingClientRect().top;
   const draw = (): void => {
-    if (getComputedStyle(upper).display === 'none') { sec.classList.remove('is-bridged'); return; }
-    const W = sec.clientWidth, S = sec.clientHeight;
-    if (!W || !S) return;
-    const cx = W / 2, R0 = W / 2, k = geo.tilt;
-    const Rm = Math.min(W * geo.radius, geo.maxRadius);
-    const a0 = top(zone), zh = zone.offsetHeight;
-    const aA = a0 + zh * geo.mouthA, aB = a0 + zh * geo.mouthB;
-    // The flare ends just above the outer spaces, so they sit on the straight grid.
-    const legendEl = lower.querySelector<HTMLElement>('.outer__legend');
-    const aF = legendEl ? top(legendEl) - (W / 12) * 0.75 : top(lower) + lower.offsetHeight * geo.flare;
-    const cell = W / 12;
+    if (!isDeck()) { sec.classList.remove('is-bridged'); return; }
+    const Wd = world.offsetWidth, H = world.offsetHeight, W = view().clientWidth;
+    if (!Wd || !H) return;
+    const cell = W / 12, k = geo.tilt, lead = cell * geo.lead;
+    const uTop = top(upper), C = upper.offsetHeight, row = C / 6, mid = uTop + C / 2, R0 = C / 2;
+    const z0 = zone.offsetLeft, zw = zone.offsetWidth, arch = archive.offsetLeft;
+    const a0 = z0 - lead, aA = z0 + zw * geo.mouthA, aB = z0 + zw * geo.mouthB, aF = arch + lead;
+    const Rm = C * geo.radius;
     const rIn = (a: number): number => Rm + (R0 - Rm) * (1 - ease((a - a0) / (aA - a0)));
     const rOut = (a: number): number => Rm + (R0 - Rm) * ease((a - aB) / (aF - aB));
-    const rThroat = (t: number): number => Rm * (0.38 + 0.62 * Math.pow(Math.abs(2 * t - 1), 1.6));
+    const rThroat = (t: number): number => Rm * (0.42 + 0.58 * Math.pow(Math.abs(2 * t - 1), 1.8));
 
     const paths: string[] = [];
-    const add = (cls: string, pts: Pt[]): void => {
+    const add = (cls: string, pts: Pt[], close = false): void => {
       if (pts.length < 2) return;
-      paths.push(`<path class="${cls}" d="${pts.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}"/>`);
+      paths.push(`<path class="${cls}" d="${pts.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}${close ? 'Z' : ''}"/>`);
     };
+    // A ring across the sheet at a (cross radius r): the half facing my space solid, the far half dashed.
     const ring = (a: number, r: number, cls: string): void => {
       const near: Pt[] = [], far: Pt[] = [];
       for (let i = 0; i <= 48; i++) {
-        const th = (i / 48) * Math.PI; // the half facing down the page is the near one
-        near.push({ x: cx + Math.cos(th) * r, y: a + Math.sin(th) * r * k });
-        far.push({ x: cx + Math.cos(th) * r, y: a - Math.sin(th) * r * k });
+        const th = Math.PI / 2 + (i / 48) * Math.PI;
+        near.push({ x: a + Math.cos(th) * r * k, y: mid + Math.sin(th) * r });
+        far.push({ x: a - Math.cos(th) * r * k, y: mid - Math.sin(th) * r });
       }
       add(`${cls} w-throat--back`, far);
       add(cls, near);
     };
 
-    // The grid starts under all the information (welcome, readout, hour marks): its first row
-    // is the top of the upper space. Rows there are 20° of declination apart (+60° at the top),
-    // so the −20° line, the lowest a project may sit on, is a real line.
-    const uTop = top(upper), uH = upper.offsetHeight, row = uH / 6;
-    const decAt = (y: number): number => Math.round(60 - ((y - uTop) / uH) * 120);
-    for (let y = uTop; y < a0 - 4; y += row) add(decAt(y) === -20 ? 'w-grid w-floor' : 'w-grid', [{ x: 0, y }, { x: W, y }]);
-    for (let y = aF + cell * 0.5; y < S; y += cell) add('w-grid', [{ x: 0, y }, { x: W, y }]);
-    // Vertical lines: straight, converging into mouth A; out of mouth B, flaring, then straight.
-    for (let i = 0; i <= 12; i++) {
-      const f = (i / 12) * 2 - 1;
-      const down: Pt[] = [{ x: cx + f * R0, y: uTop }];
+    // The throat's shadow first, so the stars behind it don't show through.
+    const shade: Pt[] = [];
+    for (let i = 0; i <= 40; i++) { const t = i / 40; shade.push({ x: aA + (aB - aA) * t, y: mid - rThroat(t) }); }
+    for (let i = 40; i >= 0; i--) { const t = i / 40; shade.push({ x: aA + (aB - aA) * t, y: mid + rThroat(t) }); }
+    add('w-shade', shade, true);
+
+    // The rows: 20° of declination apart (+60° at the top), so the −20° line is a real line.
+    // Straight across my space, into mouth A; out of mouth B, flaring, then straight across the archive.
+    for (let j = 0; j <= 6; j++) {
+      const f = (j / 6) * 2 - 1;
+      const cls = j === 4 ? 'w-grid w-floor' : 'w-grid';
+      add(cls, [{ x: 0, y: mid + f * R0 }, { x: a0, y: mid + f * R0 }]);
+      const inn: Pt[] = [];
       const aEnd = aA - Rm * k * Math.sqrt(Math.max(0, 1 - f * f));
-      for (let a = a0; a <= aEnd; a += 4) down.push({ x: cx + f * rIn(a), y: a });
-      down.push({ x: cx + f * rIn(aEnd), y: aEnd });
-      add(i === 0 || i === 12 ? 'w-grid w-edge' : 'w-grid', down);
+      for (let a = a0; a <= aEnd; a += 4) inn.push({ x: a, y: mid + f * rIn(a) });
+      inn.push({ x: aEnd, y: mid + f * rIn(aEnd) });
+      add('w-grid', inn);
       const out: Pt[] = [];
-      for (let a = aB + Rm * k * Math.sqrt(Math.max(0, 1 - f * f)); a <= aF; a += 4) out.push({ x: cx + f * rOut(a), y: a });
-      out.push({ x: cx + f * R0, y: S });
-      add(i === 0 || i === 12 ? 'w-grid w-edge' : 'w-grid', out);
+      for (let a = aB + Rm * k * Math.sqrt(Math.max(0, 1 - f * f)); a <= aF; a += 4) out.push({ x: a, y: mid + f * rOut(a) });
+      add('w-grid', out);
+      add(cls, [{ x: aF, y: mid + f * R0 }, { x: Wd, y: mid + f * R0 }]);
     }
-    for (const t of [0.55, 0.8, 0.94]) { const a = a0 + (aA - a0) * t; ring(a, rIn(a), 'w-ring'); }
-    for (const t of [0.12, 0.35, 0.65]) { const a = aB + (aF - aB) * t; ring(a, rOut(a), 'w-ring'); }
-    ring(aA, Rm, 'w-rim');
-    ring(aB, Rm, 'w-rim');
-    for (let i = 1; i < 6; i++) { const t = i / 6; ring(aA + (aB - aA) * t, rThroat(t), 'w-throat'); }
-    for (let m = 0; m < 14; m++) {
-      const th = (m / 14) * Math.PI * 2 + Math.PI / 28, pts: Pt[] = [];
+    // The columns: every twelfth of the screen, straight where the sheet is flat; where it
+    // curves, each one becomes a ring of the funnel, crowding toward the mouth.
+    for (let i = 0; i < 12; i++) {
+      const xa = i * cell, xb = arch + (i + 1) * cell;
+      if (xa < a0 - 1) add(i === 0 ? 'w-grid w-edge' : 'w-grid', [{ x: xa, y: uTop }, { x: xa, y: uTop + C }]);
+      if (xb > aF + 1) add('w-grid', [{ x: xb, y: uTop }, { x: xb, y: uTop + C }]);
+    }
+    for (const t of [0.18, 0.42, 0.62, 0.78, 0.9]) { const a = a0 + (aA - a0) * t; ring(a, rIn(a), t > 0.7 ? 'w-ring' : 'w-grid'); }
+    for (const t of [0.1, 0.22, 0.38, 0.58, 0.82]) { const a = aB + (aF - aB) * t; ring(a, rOut(a), t < 0.3 ? 'w-ring' : 'w-grid'); }
+    for (let i = 1; i < 7; i++) { const t = i / 7; ring(aA + (aB - aA) * t, rThroat(t), 'w-throat'); }
+    for (let m = 0; m < 18; m++) {
+      const th = (m / 18) * Math.PI * 2 + Math.PI / 36, pts: Pt[] = [];
       for (let i = 0; i <= 40; i++) {
         const t = i / 40, r = rThroat(t);
-        pts.push({ x: cx + Math.cos(th) * r, y: aA + (aB - aA) * t + Math.sin(th) * r * k });
+        pts.push({ x: aA + (aB - aA) * t + Math.cos(th) * r * k, y: mid + Math.sin(th) * r });
       }
-      add(Math.sin(th) >= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
+      add(Math.cos(th) <= 0 ? 'w-merid' : 'w-merid w-throat--back', pts);
     }
+    ring(aA, Rm, 'w-rim');
+    ring(aB, Rm, 'w-rim');
 
     // Coordinates, above and beside the grid, never inside it: hours just over the first row,
-    // declinations on each row of the upper space, by the left edge.
+    // declinations on each row by the left edge, on both sides of the bridge.
     const labels: string[] = [];
-    for (let i = 1; i < 12; i++) labels.push(`<text class="w-label" x="${r1(i * cell)}" y="${r1(uTop - 10)}" text-anchor="middle">${String(i * 2).padStart(2, '0')}h</text>`);
-    for (let y = uTop + row; y < a0 - 4; y += row) {
-      const dec = decAt(y);
-      labels.push(`<text class="w-label" x="8" y="${r1(y - 6)}">${dec > 0 ? '+' : dec < 0 ? '−' : ''}${Math.abs(dec)}°</text>`);
+    for (const x0 of [0, arch]) {
+      for (let i = 1; i < 12; i++) labels.push(`<text class="w-label" x="${r1(x0 + i * cell)}" y="${r1(uTop - 10)}" text-anchor="middle">${String(i * 2).padStart(2, '0')}h</text>`);
+      for (let j = 1; j <= 6; j++) {
+        const dec = 60 - j * 20;
+        labels.push(`<text class="w-label" x="${r1(x0 + 8)}" y="${r1(uTop + j * row - 6)}">${dec > 0 ? '+' : dec < 0 ? '−' : ''}${Math.abs(dec)}°</text>`);
+      }
     }
 
-    svg.setAttribute('viewBox', `0 0 ${r1(W)} ${r1(S)}`);
+    svg.setAttribute('viewBox', `0 0 ${r1(Wd)} ${r1(H)}`);
     svg.innerHTML = paths.join('') + labels.join('');
 
-    // Ghosts: down a grid line, into the mouth, through the throat, out to an outer space.
-    const secRect = sec.getBoundingClientRect();
+    // Ghosts: along a row, into the mouth, through the throat, out to an archived vstro.
+    const wr = world.getBoundingClientRect();
     ghosts.forEach((el, i) => {
-      const star = exits[i]?.querySelector('.outer__ship');
-      if (!star) return;
-      const r = star.getBoundingClientRect();
-      // Aim at the ship's post, not wherever its patrol has taken it (see initFleet).
-      const spot = star.closest<HTMLElement>('.outer__spot');
-      const m = spot ? new DOMMatrixReadOnly(getComputedStyle(spot).transform === 'none' ? undefined : getComputedStyle(spot).transform) : null;
-      const to = { x: r.left + r.width / 2 - secRect.left - (m?.e ?? 0), y: r.top + r.height / 2 - secRect.top - (m?.f ?? 0) };
-      const f = [-2 / 3, 2 / 3, -1 / 3, 1 / 3, -5 / 6, 5 / 6][i % 6];
-      const pts: Pt[] = [{ x: cx + f * R0, y: Math.max(0, a0 - 260) }];
-      for (let a = a0; a <= aA; a += 8) pts.push({ x: cx + f * rIn(a), y: a });
-      pts.push({ x: cx, y: aA }, { x: cx, y: aB });
-      for (let s = 1; s <= 14; s++) { const u = s / 14; pts.push({ x: cx + (to.x - cx) * ease(u), y: aB + (to.y - aB) * u }); }
+      const body = bodies[i];
+      if (!body) return;
+      const r = body.getBoundingClientRect();
+      const to = { x: r.left + r.width / 2 - wr.left, y: r.top + r.height / 2 - wr.top };
+      const f = [-2 / 3, 2 / 3, -1 / 3, 1 / 3, -1, 1][i % 6];
+      const pts: Pt[] = [{ x: a0 - cell * 2, y: mid + f * R0 }];
+      for (let a = a0; a <= aA; a += 8) pts.push({ x: a, y: mid + f * rIn(a) });
+      pts.push({ x: aA, y: mid }, { x: aB, y: mid });
+      for (let s = 1; s <= 14; s++) { const u = s / 14; pts.push({ x: aB + (to.x - aB) * u, y: mid + (to.y - mid) * ease(u) }); }
       el.style.offsetPath = `path("${pts.map((p, j) => `${j ? 'L' : 'M'}${r1(p.x)} ${r1(p.y)}`).join('')}")`;
-      el.style.setProperty('--delay', `${(i * 1.7).toFixed(1)}s`);
+      el.style.setProperty('--delay', `${(i * 2.6).toFixed(1)}s`);
     });
     sec.classList.add('is-bridged');
   };
@@ -572,9 +768,18 @@ function initBridge(): void {
     a.addEventListener('focus', on);
     a.addEventListener('blur', off);
   });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(sec);
+
+  const mode = (): void => {
+    if (tablist) tablist.hidden = !isDeck();
+    const ratio = maxX() ? x / maxX() : 0;
+    draw();
+    set(ratio * maxX());
+  };
+  deck?.addEventListener?.('change', mode);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(mode).observe(sec);
   document.fonts?.ready.then(draw);
-  draw();
+  mode();
+  if (decodeURIComponent(location.hash.slice(1)) === 'archive') go('archive', false);
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -617,9 +822,11 @@ function initHud(): void {
     if (k < 0) return;
     // Wide screens show the plane, not the Registro: the projects are the upper space, the
     // outer spaces the lower one.
+    // Wide screens show the plane, not the Registro: the ships and most stars are in my space,
+    // the archived projects past the bridge.
     if (hud.offsetParent === null) {
-      const alt = document.querySelector<HTMLElement>(k === 0 ? '[data-sky]' : '[data-outer]');
-      alt?.scrollIntoView({ block: k === 0 ? 'center' : 'start', behavior: reduced() ? 'auto' : 'smooth' });
+      const star = target && target !== panels[k] ? document.querySelector(`[data-star="${id}"]`) : null;
+      document.dispatchEvent(new CustomEvent('cosmos:go', { detail: { to: star?.closest('[data-space="archive"]') ? 'archive' : 'here' } }));
       return;
     }
     select(k);
@@ -701,55 +908,126 @@ function initNavMenus(): void {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The fleet: the outer spaces' ships patrol their grid. Every 1.4s one ship takes a step of
-   half a grid cell along a grid axis (never diagonally), turning its hull to the heading, and
-   never strays more than two steps from its post (its `x` / `y` in src/content/spaces/) or
-   comes too close to another ship. A ship being pointed at or focused holds still, so it's always easy to click;
-   the others keep moving. Still under reduced motion, paused offscreen and in hidden tabs.
+   The fleet: the outer spaces' ships explore my space. Each one sets out from its post (its
+   `x` / `y` in src/content/spaces/, in the band under the −20° line), picks somewhere to go
+   that is clear of the stars, their names and the other ships' destinations, turns toward it
+   (never faster than a slow ship would), cruises there, slowing as it arrives, parks a few
+   seconds and sets off again. The hull turns with the heading; the name under it stays upright.
+   Ships fly under the stars, so a star is always clickable; a ship being pointed at, focused or
+   opened holds still, so it's always easy to click. A click on a ship reveals its address (the
+   link) under its name; another click, Escape or a click elsewhere hides it. Back at their posts and still under reduced motion;
+   paused offscreen, in hidden tabs and when the plane isn't shown.
    --------------------------------------------------------------------------------------------- */
+interface Box { l: number; t: number; r: number; b: number }
+
 function initFleet(): void {
   const field = document.querySelector<HTMLElement>('.outer__field');
-  const sec = document.querySelector<HTMLElement>('[data-cosmos]');
-  if (!field || !sec) return;
+  const sky = field?.closest<HTMLElement>('[data-sky]');
+  if (!field || !sky) return;
   const spots = Array.from(field.querySelectorAll<HTMLElement>('.outer__spot'));
   if (!spots.length) return;
-  const pos = spots.map(() => ({ gx: 0, gy: 0 }));
-  const RANGE = 2, GAP_X = 170, GAP_Y = 56;
-  const DIRS = [
-    { dx: 0, dy: -1, deg: 0 },
-    { dx: 1, dy: 0, deg: 90 },
-    { dx: 0, dy: 1, deg: 180 },
-    { dx: -1, dy: 0, deg: -90 },
-  ];
-  let visible = true;
+  const SPEED = 30, TURN = 80, HALF = 70, CLEAR = 22; // px/s, deg/s, half a ship's name, margin
+  const ships = spots.map((el) => ({
+    el,
+    hull: el.querySelector<HTMLElement>('.outer__ship'),
+    x: 0, y: 0, // offset from its post
+    deg: 0,
+    to: null as { x: number; y: number } | null,
+    rest: performance.now() + 600 + Math.random() * 3500,
+  }));
+  let visible = true, last = 0;
   watchVisibility(field, (v) => { visible = v; });
-  const home = (el: HTMLElement): { x: number; y: number } => ({ x: el.offsetLeft, y: el.offsetTop });
-  const tick = (): void => {
-    if (reduced() || !visible || document.hidden || getComputedStyle(field).display === 'none') return;
-    const step = sec.clientWidth / 24; // half a grid cell
-    const i = Math.floor(Math.random() * spots.length);
-    const el = spots[i];
-    if (el.matches(':hover') || el.contains(document.activeElement)) return;
-    const here = pos[i];
-    const options = DIRS.filter(({ dx, dy }) => {
-      const gx = here.gx + dx, gy = here.gy + dy;
-      if (Math.abs(gx) > RANGE || Math.abs(gy) > RANGE) return false;
-      const a = home(el);
-      const ax = a.x + gx * step, ay = a.y + gy * step;
-      return spots.every((o, j) => {
-        if (j === i) return true;
-        const b = home(o);
-        return Math.abs(b.x + pos[j].gx * step - ax) > GAP_X || Math.abs(b.y + pos[j].gy * step - ay) > GAP_Y;
-      });
+
+  // What a ship must not park on: every star of my space, with its name.
+  const obstacles = (): Box[] => {
+    const f = field.getBoundingClientRect();
+    return Array.from(sky.querySelectorAll<HTMLElement>('.star__link, .star__label, .chart__constellations li')).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { l: r.left - f.left - CLEAR, t: r.top - f.top - CLEAR, r: r.right - f.left + CLEAR, b: r.bottom - f.top + CLEAR };
     });
-    if (!options.length) return;
-    const d = options[Math.floor(Math.random() * options.length)];
-    here.gx += d.dx;
-    here.gy += d.dy;
-    el.style.setProperty('--heading', `${d.deg}deg`);
-    el.style.transform = `translate(${here.gx * step}px, ${here.gy * step}px)`;
   };
-  window.setInterval(tick, 1400);
+  // A ship parked at (x, y): its hull, its name under it, and room for its address.
+  const shipBox = (x: number, y: number): Box => ({ l: x - HALF, t: y - 18, r: x + HALF, b: y + 54 });
+  const hit = (a: Box, b: Box): boolean => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+
+  const pick = (i: number): { x: number; y: number } | null => {
+    const s = ships[i], W = field.clientWidth, H = field.clientHeight;
+    const hx = s.el.offsetLeft, hy = s.el.offsetTop;
+    const avoid = obstacles();
+    ships.forEach((o, j) => {
+      if (j === i) return;
+      const at = o.to ?? { x: o.x, y: o.y };
+      avoid.push(shipBox(o.el.offsetLeft + at.x, o.el.offsetTop + at.y));
+    });
+    for (let tries = 0; tries < 40; tries++) {
+      const ax = HALF + 12 + Math.random() * Math.max(1, W - 2 * HALF - 24), ay = 24 + Math.random() * Math.max(1, H - 84);
+      const d = Math.hypot(ax - (hx + s.x), ay - (hy + s.y));
+      if (d < 140 || d > 560) continue;
+      if (avoid.some((b) => hit(shipBox(ax, ay), b))) continue;
+      return { x: ax - hx, y: ay - hy };
+    }
+    return null;
+  };
+
+  const place = (s: (typeof ships)[number]): void => {
+    s.el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`;
+    s.hull?.style.setProperty('--heading', `${s.deg.toFixed(1)}deg`);
+  };
+  const home = (): void => ships.forEach((s) => { s.x = s.y = s.deg = 0; s.to = null; place(s); });
+
+  const frame = (now: number): void => {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.1, (now - (last || now)) / 1000);
+    last = now;
+    if (!visible || document.hidden || field.offsetParent === null) return;
+    if (reduced()) { if (ships.some((s) => s.x || s.y)) home(); return; }
+    ships.forEach((s, i) => {
+      if (s.el.matches(':hover') || s.el.contains(document.activeElement) || s.el.classList.contains('is-open')) return;
+      if (!s.to) {
+        if (now < s.rest) return;
+        s.to = pick(i);
+        if (!s.to) { s.rest = now + 1500; return; }
+      }
+      const dx = s.to.x - s.x, dy = s.to.y - s.y, d = Math.hypot(dx, dy);
+      if (d < 6) { s.to = null; s.rest = now + 2500 + Math.random() * 5000; return; }
+      // Turn toward it (0° is up), no faster than TURN; cruise, slowing over the last 80px,
+      // and barely move until the nose points roughly the right way.
+      const want = (Math.atan2(dx, -dy) * 180) / Math.PI;
+      const diff = ((want - s.deg + 540) % 360) - 180;
+      s.deg += Math.max(-TURN * dt, Math.min(TURN * dt, diff));
+      const align = Math.max(0, Math.cos((diff * Math.PI) / 180));
+      const v = SPEED * Math.min(1, 0.25 + d / 80) * align * align;
+      const rad = (s.deg * Math.PI) / 180;
+      s.x += Math.sin(rad) * v * dt;
+      s.y += -Math.cos(rad) * v * dt;
+      place(s);
+    });
+  };
+  requestAnimationFrame(frame);
+
+  // A click on a ship shows its address; one ship at a time.
+  const shut = (except?: HTMLElement): void => ships.forEach(({ el }) => {
+    if (el === except) return;
+    el.classList.remove('is-open');
+    el.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false');
+  });
+  ships.forEach(({ el }) => {
+    const btn = el.querySelector<HTMLButtonElement>('.outer__ship-btn');
+    btn?.addEventListener('click', () => {
+      const open = !el.classList.contains('is-open');
+      shut(el);
+      el.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+  document.addEventListener('click', (e) => { if (!(e.target as Element).closest('.outer__spot')) shut(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = ships.find(({ el }) => el.classList.contains('is-open'));
+    if (!open) return;
+    shut();
+    open.el.querySelector<HTMLElement>('.outer__ship-btn')?.focus();
+  });
 }
 
 export function initCosmos(): void {

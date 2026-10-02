@@ -2,6 +2,7 @@
 catalog: 5
 field: creavis
 status: live
+archive: true
 category_en: "hugo theme"
 category_es: "tema de hugo"
 title_en: "Plano"

@@ -10,13 +10,18 @@ in both themes.
 These are rules, not suggestions. Check them in the browser after any change to the plane.
 
 1. **Information sits above the grid.** The welcome, the coordinate readout, the magnitude
-   legend and the hour marks always sit above the grid's first row. The grid starts at the top
-   of the upper space (`[data-sky]`), under all of them; cosmos.ts draws nothing above that line,
-   and the no-JS CSS grid starts there too. Declination marks sit by the left edge, on their own
-   row lines, never over a star's label.
-2. **No project below −20°.** The upper space's rows are 20° of declination apart (+60° at its
-   top, the −20° line drawn dashed). A star's `y` must be ≤ `FLOOR_Y` (66.6): the build fails on
-   a file that breaks it, and `placeFor` clamps derived positions, so place stars above it on purpose.
+   legend and the hour marks always sit above the grid's first row. On wide screens the welcome
+   and the readout stay put (`.cosmos__head`) while the map moves under them; the grid starts at
+   the top of each side's `[data-sky]` box, under all of them. Declination marks sit by the left
+   edge of each side, on their own row lines, never over a star's label.
+2. **No project below −20°.** The rows are 20° of declination apart (+60° at the top, the −20°
+   line drawn dashed). A star's `y` must be ≤ `FLOOR_Y` (66.6): the build fails on a file that
+   breaks it, and `placeFor` clamps derived positions. Under the line is where the ships start.
+3. **One size per star.** Every star is the same size (27px; the ships are 18px). Brightness says
+   the status: live full (with a soft glow), wip 60%, soon 30%, and always a word beside it.
+4. **One screen, no scroll** (wide screens, with JS). The plane is a map, dragged sideways: my
+   space, the bridge, the archive. The footer and the Registro are hidden there; phones keep the
+   welcome over the sketch, the Registro and the footer, and no-JS stacks everything.
 
 ## Where things are edited
 
@@ -47,7 +52,11 @@ Start from the templates in `src/content/_templates/` (they explain every field 
    - `category_en` / `category_es`, `title_*`, `description_*` (one line), `stack`
      (`stack / tags`, the card's composition; not `tags`, which Markdown editors reserve). Every
      text in both languages; empty titles show the placeholder.
-   - `status`: `live` · `wip` · `soon` (magnitude 1.0 / 3.0 / 5.5 and the planet's state).
+   - `status`: `live` · `wip` · `soon` (magnitude 1.0 / 3.0 / 5.5, the star's brightness and
+     the planet's state).
+   - `archive`: `true` sends it past the bridge, to the archive (finished work, rarely
+     touched): there it's a vstro in a row in catalog order, and its `x` / `y` are unused.
+     Leave it `false` for featured and still-forming work, a star in my space.
    - `field`: `automata` (AI: agent skills, MCP servers) · `systemis` (an application or a
      whole system someone uses) · `creavis` (themes, music, audiovisual, anything artistic).
      This picks the constellation; there are no others.
@@ -101,31 +110,31 @@ One native `<dialog>` per project, `id="ficha-vs-00n"`:
 - `handle`: the address as shown, without `https://`. `url` empty renders it without a link.
 - `ship`: one of the hulls in `src/data/ships.ts` (`probe`, `fighter`, `shuttle`, `saucer`,
   `rocket`). Prefer a hull no other space uses; for a new one, see below.
-- `x`, `y`: 0–100 across and down the lower space's field (the straight grid under the
-  bridge). The label hangs to the right, so `x` ≤ 78 (the build checks it); keep at least
-  ~12 units between ships so labels never touch.
+- `x`, `y`: where the ship starts: `x` 4–92 across my space (the build checks it), `y` 0–100
+  down the band under the −20° line. Keep ~16 units between ships.
 
-### The fleet (ships patrol their grid)
+### The fleet (ships explore my space)
 
-`initFleet` (`src/scripts/cosmos.ts`), with the transitions in `site.css` (`.outer__spot`,
-`.outer__ship`):
+`initFleet` (`src/scripts/cosmos.ts`), styles in `site.css` (`.outer__spot`, `.outer__ship-btn`,
+`.outer__go`):
 
-- Every 1.4s one ship, picked at random, takes one step of half a grid cell (the section's
-  width / 24) along a grid axis, never diagonally. The spot slides there in 2.6s
-  (`--ease-in-out`) and the hull turns to its heading in 0.6s (`--heading`: 0° up, 90° right,
-  180° down, −90° left).
-- It never strays more than two steps from its post (`at`), and a step that would bring it
-  within ~170px across / ~56px down of another ship's position is not taken, so labels never
-  overlap.
-- A ship under the cursor or holding focus doesn't move, so it's always easy to click. The
-  label travels with it (the whole link moves).
+- A ship is a button: its hull, centred on its point, and its name under it (11px mono,
+  `--fg-subtle`). A click reveals its address under the name, the link (`.outer__go`, with
+  `aria-expanded` on the button); another click, Escape or a click elsewhere hides it. Without
+  JS the address always shows.
+- Each ship rests at its post for a few seconds, then picks a destination 140–560px away that
+  is clear of every star, star name and constellation name (+22px) and of the other ships'
+  destinations (a ship's box is its hull, its name and room for the address). It turns toward
+  it at `TURN` (80°/s; 0° is up), cruises at `SPEED` (30px/s), slowing over the last 80px and
+  barely moving until its nose points the right way, parks 2.5–7.5s and sets off again.
+- Ships fly under the stars (`z-index`), so a star is always clickable. A ship under the
+  cursor, holding focus or opened holds still.
 - The fleet stops offscreen, in hidden tabs and when the plane is hidden (phones), and stays at
-  its posts under reduced motion. Ghost stars always aim at the post, not the patrol.
-- To tune it: `RANGE` (steps from the post), `GAP_X` / `GAP_Y` (spacing) and the interval in
-  `initFleet`; the step's duration in `.outer__spot`.
+  its posts under reduced motion.
+- To tune it: `SPEED`, `TURN`, `HALF` (half a ship's box) and `CLEAR` in `initFleet`.
 
-It then appears as a ship in the lower space, in the nav's Outer spaces menu and in the
-Registro's second tab, and a ghost star falls through the bridge to it.
+It then appears as a ship in my space, in the nav's Outer spaces menu and in the Registro's
+second tab.
 
 ### Drawing a new ship (`src/data/ships.ts`)
 
@@ -134,7 +143,7 @@ fails on any other shape). `ds/Ship.astro` turns each `#` into a 1×1 square in 
 `viewBox="0 0 9 9"` path, `shape-rendering="crispEdges"`, filled with `currentColor`, exactly
 like `Mark.astro`.
 
-- Point it up (it travels up the page, out of the bridge). Keep it symmetric left–right.
+- Point it up (0° is up; the hull turns to its heading). Keep it symmetric left–right.
 - Keep a clear silhouette at 14px (the nav menu) and 18px (the plane): no single isolated
   pixels inside the body, at most ~45 lit pixels of the 81.
 - Leave the outer ring of pixels mostly empty where you can, so ships don't look bigger than
@@ -160,28 +169,43 @@ like `Mark.astro`.
 path groups (core, three arm rings, four diagonals) so `motion="spin"` / `"build"` can animate
 them. Don't redraw it; it's the design system's.
 
-## The plane: grid, bridge and coordinates
+## The plane: a map, the bridge and coordinates
 
-All in `initBridge` (`src/scripts/cosmos.ts`), redrawn to the section's real size on resize:
+All in `initBridge` (`src/scripts/cosmos.ts`), redrawn to the world's real size on resize:
 
-- Grid cells are a twelfth of the page's width; in the upper space the rows are a sixth of its
-  height (20° each). Lines are `--border`; the −20° floor is dashed `--border-strong`.
-- The bridge: `bridge` in `src/data/sky.ts` sets `mouthA` / `mouthB` (fractions of the bridge zone's
-  height), `radius` / `maxRadius` (the mouths) and `tilt` (how flat the rings look). The
-  vertical lines converge with `smoothstep` into mouth A, the throat is an hourglass
-  (`r = Rm·(0.38 + 0.62·|2t−1|^1.6)`) drawn as rings and meridians (far halves dashed), and the
-  lines flare out after mouth B until just above the outer spaces' legend, then run straight.
-- The welcome is kept compact (small gaps, `--space-5` above it and above the grid) so the grid
-  gets the room; don't add lines to it.
-- The zone heights live in `site.css` (`.cosmos__upper`, `.cosmos__bridge`, `.cosmos__lower`);
-  the bridge sits roughly mid-page.
+- **The map.** `.cosmos__world` is my space (a screen wide), the bridge's zone (`bridge.width`
+  screens) and the archive (a screen), side by side, translated under `.cosmos__viewport`.
+  Drag (a press that moves more than 5px pans and swallows the click that follows; it coasts
+  at ×0.92 per frame when let go), a trackpad's swipe or the wheel, the arrow keys, or the tabs
+  (`[data-map-go]`, a 450–1300ms cubic glide). Focus that lands out of view glides its side in.
+  Reduced motion jumps instead of gliding.
+- **The welcome rewrites itself.** When the middle of the screen crosses the middle of the
+  bridge, `transmute()` turns the title and lead into the other side's (`data-words` on
+  `.cosmos__head`): every 75ms positions settle left to right, each flickering through a few
+  ASCII glyphs (`#%&*+=-/\<>_|:;~^`, `--fg-subtle`) first. Instant under reduced motion. The
+  title keeps a 2-line height so the grid never jumps. Screen readers get the h1's fixed text.
+- **The grid.** Cells are a twelfth of the screen's width; rows a sixth of the `[data-sky]`
+  box's height (20° each), on both sides. Lines are `--border`; the −20° floor is dashed
+  `--border-strong`. Hours along the top and declinations down the left of each side.
+- **The bridge.** `bridge` in `src/data/sky.ts`: `width` (screens), `lead` (cells before the
+  zone where the rows start bending, a hint at my space's right edge, and after it where they
+  straighten), `mouthA` / `mouthB` (fractions of the zone), `radius` (of the grid's height)
+  and `tilt` (how flat the rings look). The rows converge with `smoothstep` into mouth A while
+  the columns become rings that crowd toward it (`--border`, then `--border-strong` near the
+  rim); the throat is a slim hourglass (`r = Rm·(0.42 + 0.58·|2t−1|^1.8)`) of 6 rings and 18
+  meridians, far halves dashed, over a `--bg` shadow; the rims are `--fg-muted` at 1.25px; the
+  rows flare out past mouth B into the archive. Near meridians flow toward the archive, faster
+  while the map moves or a ship is pointed at. Ghost stars ride a row through the throat to
+  each archived vstro.
+- **The archive.** Archived projects, as vstros in a row across the middle (evenly spaced,
+  catalog order), names under them, a little dimmer, no constellations. A star opens its card.
 - Coordinates: `coordsOf(x, y)` maps x 0–100 to 00h–24h and y 0–100 to +60°…−60°.
 
 ## The phones' sky sketch
 
 Under 860px the plane is hidden, and `Chart.astro` renders a still sketch of the same sky
 behind the welcome, at build time: the 12×6 grid with the −20° floor dashed, the constellation
-lines, each project's star (sized and dimmed by status, no animation) and 56 dust stars from a
+lines, each project's star (one size, dimmed by status, no animation) and 56 dust stars from a
 fixed hash. It's `aria-hidden`, takes no pointer events, sits at low opacity and fades out
 at its edges (`.cosmos__sketch` in `site.css`). It follows the content by itself: nothing to
 do when a project is added.

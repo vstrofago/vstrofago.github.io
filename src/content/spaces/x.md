@@ -5,6 +5,6 @@ name_es: "X"
 handle: "x.com/vstrofago"
 url: https://x.com/vstrofago
 ship: shuttle
-x: 58
-y: 22
+x: 42
+y: 30
 ---

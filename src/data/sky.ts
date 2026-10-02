@@ -48,16 +48,19 @@ export interface Constellation {
 export const fields: Record<Field, { name: string; center: { x: number; y: number }; at: { x: number; y: number } }> = {
   automata: { name: 'Automata', center: { x: 78, y: 46 }, at: { x: 74, y: 50 } },
   systemis: { name: 'Systemis', center: { x: 50, y: 30 }, at: { x: 48, y: 12 } },
-  creavis: { name: 'Creavis', center: { x: 16, y: 50 }, at: { x: 9, y: 36 } },
+  creavis: { name: 'Creavis', center: { x: 16, y: 50 }, at: { x: 10, y: 50 } },
 };
 
-/** The Einstein–Rosen bridge, drawn by cosmos.ts in the middle of the page, top to bottom:
- *  the grid is straight down to the bridge's zone (the gap between the upper space and the
- *  lower one), converges into a first mouth at `mouthA` of that zone, runs down a wireframe
- *  throat to a second mouth at `mouthB`, and flares out again until `flare` of the lower space
- *  (where the outer spaces sit), then runs straight on. `radius` is the mouths' radius as a
- *  fraction of the page's width (at most `maxRadius` px); `tilt` flattens the rings. */
-export const bridge = { mouthA: 0.46, mouthB: 0.9, flare: 0.32, radius: 0.1, maxRadius: 150, tilt: 0.3 };
+/** The Einstein–Rosen bridge (wide screens). The plane is a map, dragged sideways: my space
+ *  (the stars, and the outer spaces' ships under the −20° line) on the left, the archive (the
+ *  archived projects, still planets) on the right, each a screen wide, and between them the
+ *  bridge's zone, `width` screens wide. cosmos.ts draws it along the grid's rows: they start
+ *  bending `lead` grid cells before the zone (a hint, at the edge of the screen, that the map
+ *  goes on), converge into a first mouth at `mouthA` of the zone, run through an hourglass
+ *  wireframe throat to a second mouth at `mouthB`, and flare out again until `lead` cells into
+ *  the archive. `radius` is the mouths' radius as a fraction of the grid's height; `tilt`
+ *  flattens the rings. */
+export const bridge = { width: 0.5, lead: 0.75, mouthA: 0.34, mouthB: 0.66, radius: 0.13, tilt: 0.28 };
 
 /** The −20° line, as y in the upper space: no project sits below it. */
 export const FLOOR_Y = (80 / 120) * 100;
