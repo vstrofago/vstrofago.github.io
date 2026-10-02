@@ -5,6 +5,6 @@ name_es: "Blog"
 handle: "vstrofago.github.io/blog"
 url: https://vstrofago.github.io/blog/
 ship: probe
-x: 14
-y: 26
+x: 6
+y: 30
 ---

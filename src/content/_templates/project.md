@@ -6,6 +6,7 @@
 catalog:          # next free number (1 → VS-001); never reuse or renumber one
 field:            # automata (AI: agent skills, MCP servers) · systemis (an application or a whole system) · creavis (themes, music, audiovisual)
 status:           # live (a formed world) · wip (part wireframe) · soon (a dust disc)
+archive: false    # true: it rests past the bridge, in the archive's display case (a still planet, in catalog order); false: a star in my space
 category_en:      # what it is, lowercase: "agent skill", "hugo theme"
 category_es:
 title_en:         # leave both titles empty to show the [Project name] placeholder
@@ -16,7 +17,7 @@ stack:            # stack / tags, e.g. "astro / typescript" (not `tags`: editors
 demo:             # links: at least one of demo, github, more (in that order;
 github:           #   the first one set is where the name goes without JS)
 more:
-x:                # 0–100 across the upper space, near its constellation's other stars;
+x:                # 0–100 across my space (ignored in the archive), near its constellation's other stars;
 y:                #   0–66.6 down it (the −20° floor). Both empty: lands near the field's centre
 side: right       # where the name hangs: right, or left near the right edge
 planet:           # rocky · gas; empty derives the whole planet from the id

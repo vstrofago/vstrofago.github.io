@@ -5,6 +5,6 @@ name_es: "YouTube"
 handle: "youtube.com/@vstrofago"
 url: https://www.youtube.com/@vstrofago
 ship: saucer
-x: 74
-y: 58
+x: 58
+y: 72
 ---

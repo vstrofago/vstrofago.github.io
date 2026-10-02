@@ -2,6 +2,7 @@
 catalog: 4
 field: creavis
 status: live
+archive: true
 category_en: "omarchy theme"
 category_es: "tema de omarchy"
 title_en: "Omarchy brutalistoic"

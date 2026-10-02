@@ -117,54 +117,78 @@ body { margin: 0; min-height: 100vh; }
 }
 
 /* ---------- The plane (wide screens: one screen, no scroll, a map) ----------
-   With JS, wide screens get a map: the page doesn't scroll, the footer and the Registro go,
-   and the plane fills the screen under the nav. Its world is wider than the screen: my space
-   (one screen), the bridge's zone, the outer spaces (one screen); cosmos.ts pans it (drag,
-   wheel, keys, the tabs) and draws the grid and the horizontal Einstein–Rosen bridge into
-   svg[data-warp]. Without JS both spaces stack on one scrolling page over a plain CSS grid. */
+   With JS, wide screens get a map: the page doesn't scroll, the footer and the Registro go.
+   Under the nav the head (the welcome, the readout and magnitudes) stays put; under it the
+   viewport shows part of a wider world: my space (one screen), the bridge's zone, the archive
+   (one screen). cosmos.ts pans it (drag, wheel, keys, the tabs) and draws the grid and the
+   horizontal Einstein–Rosen bridge into svg[data-warp]. Without JS my space and the archive
+   stack on one scrolling page over a plain CSS grid. */
 .cosmos { position: relative; overflow: hidden; }
-/* Without JS a plain CSS grid stands in, under the stars and the ships (never behind the welcome). */
-.cosmos:not(.is-bridged) :is(.cosmos__upper, .outer__field) { background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 12) calc(100vw / 12); }
+/* Without JS a plain CSS grid stands in, under the stars and the planets (never behind the welcome). */
+.cosmos:not(.is-bridged) .cosmos__upper { background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: calc(100% / 12) calc(100% / 6); }
 .cosmos__field { position: absolute; inset: -16px; transition: transform 600ms var(--ease-out); }
 .cosmos__stars-bg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--fg); pointer-events: none; }
 .cosmos__warp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .cosmos__warp path { fill: none; stroke-width: 1; }
+.cosmos__head { position: relative; z-index: 3; pointer-events: none; }
+.cosmos__head a, .cosmos__head button { pointer-events: auto; }
 /* The welcome is kept compact so the grid gets the room. */
 .cosmos__intro { position: relative; z-index: 2; display: grid; justify-items: center; gap: var(--space-2); padding-top: var(--space-5); padding-bottom: var(--space-2); text-align: center; }
 .chart__title { font-size: clamp(28px, 2.4vw, 36px); line-height: 1.1; letter-spacing: -0.01em; max-width: 26ch; }
 .chart__lead { max-width: 40ch; }
+/* The welcome keeps its height while it rewrites, so the plane under it never jumps. */
+@media (min-width: 860px) {
+  .js .chart__title { min-height: 2.2em; display: flex; align-items: flex-end; justify-content: center; }
+}
 /* Readout and magnitudes: at the top, under the welcome. */
-.cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-2); pointer-events: none; }
-.cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-5) var(--gutter) 0; }
-.cosmos__world { position: relative; }
+.cosmos__bar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-2); }
+.cosmos__upper { position: relative; z-index: 2; height: clamp(560px, 72vh, 760px); margin: var(--space-6) var(--gutter) 0; }
+.cosmos__world, .cosmos__viewport { position: relative; }
 .cosmos__space { position: relative; }
 .cosmos__space:focus { outline: none; }
-.cosmos__space--outer { padding-top: var(--space-9); padding-bottom: var(--space-8); }
-.cosmos__space--outer .outer__field { margin: var(--space-7) auto 0; }
+.cosmos__space--archive { padding-block: var(--space-9) var(--space-8); }
+.cosmos__plane-title { display: flex; justify-content: center; }
 .cosmos__bridge { display: none; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 @media (min-width: 860px) {
   .js, .js body { height: 100%; overflow: hidden; }
   .js .footer { display: none; }
-  .js .cosmos { --W: 100vw; --B: calc(var(--W) * var(--bridge, 0.8)); height: calc(100svh - 64px); cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-  .js .cosmos.is-dragging { cursor: grabbing; }
-  .js .cosmos.is-dragging a { cursor: grabbing; }
+  .js .cosmos { --W: 100vw; --B: calc(var(--W) * var(--bridge, 0.5)); height: calc(100svh - 64px); display: flex; flex-direction: column; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .js .cosmos.is-dragging, .js .cosmos.is-dragging a { cursor: grabbing; }
+  .js .cosmos__viewport { flex: 1; min-height: 0; overflow: hidden; }
   .js .cosmos__world { position: absolute; top: 0; left: 0; height: 100%; width: calc(var(--W) * 2 + var(--B)); will-change: transform; }
   .js .cosmos__space { position: absolute; top: 0; bottom: 0; z-index: 2; width: var(--W); display: flex; flex-direction: column; padding: 0; }
   .js .cosmos__space--here { left: 0; }
-  .js .cosmos__space--outer { left: calc(var(--W) + var(--B)); }
+  .js .cosmos__space--archive { left: calc(var(--W) + var(--B)); }
+  .js .cosmos__plane-title { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .js .cosmos__bridge { display: block; position: absolute; top: 0; bottom: 0; left: var(--W); width: var(--B); }
   /* Room for the hour marks above the grid, and for the tabs under it. */
-  .js .cosmos__upper { flex: 1; height: auto; min-height: 0; margin: 36px var(--gutter) 72px; }
-  .js .cosmos__space--outer .outer__field { flex: 1; height: auto; min-height: 0; margin: 36px auto 72px; }
+  .js .cosmos__upper { flex: 1; height: auto; min-height: 0; margin: 30px var(--gutter) 72px; }
 }
 
 /* The tabs: at the foot of the plane, fixed while the map moves; each glides the map to its
-   space, so nobody has to drag. The hint says the map can be dragged. */
+   space, so nobody has to drag. The pressed one is the space on show. */
 .cosmos__tabs { position: absolute; left: 50%; bottom: var(--space-4); z-index: 4; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg); cursor: default; }
 .cosmos__tabs[hidden] { display: none; }
 .cosmos__tabs .hud__tab[aria-pressed="true"] { color: var(--fg); border-color: var(--border-strong); }
-.cosmos__hint { padding: 0 var(--space-3) 0 var(--space-2); font: 400 var(--text-label)/1 var(--font-mono); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--fg-subtle); white-space: nowrap; }
+
+/* The welcome rewrites itself when the map crosses the bridge: a terminal's glyphs settle,
+   left to right, into the other space's words (cosmos.ts). */
+[data-transmute] .tx-glyph { color: var(--fg-subtle); }
+
+/* The archive: each archived project a small, still planet on display, its name under it. */
+.archive__bodies { list-style: none; margin: 0; padding: 0; }
+.exhibit { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; z-index: 2; }
+.exhibit__link { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-2); border-radius: var(--radius-control); text-align: center; }
+.stoico a.exhibit__link { color: var(--fg); text-decoration: none; }
+.exhibit__planet { width: clamp(150px, 14vw, 210px); height: clamp(150px, 14vw, 210px); transition: transform var(--dur-base) var(--ease-out); }
+.exhibit__link:hover .exhibit__planet, .exhibit__link:focus-visible .exhibit__planet { transform: scale(1.06); }
+.exhibit__label { display: grid; justify-items: center; gap: 4px; white-space: nowrap; }
+.exhibit__name { font: 500 14px/1.2 var(--font-sans); letter-spacing: -0.005em; color: var(--fg-muted); transition: color var(--dur-fast) var(--ease-standard); }
+.exhibit__link:hover .exhibit__name, .exhibit__link:focus-visible .exhibit__name { color: var(--fg); }
+.exhibit__meta { font: 400 11px/1.3 var(--font-mono); letter-spacing: 0.04em; color: var(--fg-subtle); }
+@media (prefers-reduced-motion: reduce) { .exhibit__planet { transition: none; } }
 
 .chart__grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .chart__line { stroke: var(--fg-subtle); stroke-width: 1; opacity: 0.7; }
@@ -199,17 +223,20 @@ body { margin: 0; min-height: 100vh; }
 .star--soon .star__name { color: var(--fg-subtle); }
 @keyframes star-breathe { 50% { opacity: 0.45; } }
 
-/* The bridge's lines: the grid faint, so the words on it read; the rims and throat a step up.
-   The throat's far side is dashed and fainter; its near meridians flow toward the outer spaces,
-   faster while the map moves or a ship is pointed at. Ghost stars ride offset-paths through
-   the throat to each ship. */
+/* The bridge's lines: the grid faint, so the words on it read. As the sheet curves into the
+   mouth its columns become rings, a step up near the rim; the rims are the brightest lines; the
+   throat is a slim hourglass, its far side dashed and fainter, over a shadow that hides the
+   stars behind it. Its near meridians flow toward the archive, faster while the map moves or a
+   ship is pointed at. Ghost stars ride offset-paths through the throat to each archived planet. */
 .w-grid { stroke: var(--border); }
 .w-edge { stroke: var(--border); }
-/* −20°: the floor of my space; no project sits below it. */
+/* −20°: the floor of the stars; under it fly the ships. */
 .w-floor { stroke: var(--border-strong); stroke-dasharray: 4 6; }
 .w-ring { stroke: var(--border-strong); }
-.w-rim, .w-throat, .w-merid { stroke: var(--fg-subtle); }
+.w-rim { stroke: var(--fg-muted); stroke-width: 1.25 !important; }
+.w-throat, .w-merid { stroke: var(--fg-subtle); }
 .w-throat--back { stroke: var(--border-strong); stroke-dasharray: 2 4; }
+.w-shade { fill: var(--bg) !important; stroke: none; opacity: 0.85; }
 .w-merid:not(.w-throat--back) { stroke-dasharray: 3 7; animation: bridge-flow 2.8s linear infinite; }
 .is-pulling .w-merid:not(.w-throat--back) { animation-duration: 0.8s; }
 @keyframes bridge-flow { to { stroke-dashoffset: -20; } }
@@ -222,9 +249,10 @@ body { margin: 0; min-height: 100vh; }
 @keyframes bridge-ghost { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 0.8; } 40% { opacity: 0.3; } 60% { opacity: 0.3; } 92% { opacity: 0.8; } 100% { offset-distance: 100%; opacity: 0; } }
 @supports not (offset-path: path("M0 0")) { .bridge__ghosts { display: none; } }
 
-/* The outer spaces: the ships fly scattered over their space's grid, like the stars: the ship
+/* The outer spaces: under the −20° line of my space (where no project sits), the ships fly
+   scattered like the stars above: the ship
    centred on its point, name and address to its right. */
-.outer__field { position: relative; list-style: none; margin: 0; padding: 0; width: calc(100% - 2 * var(--gutter)); height: clamp(420px, 56vh, 580px); }
+.outer__field { position: absolute; left: 0; right: 0; top: calc(66.667% + 1px); bottom: 0; z-index: 2; list-style: none; margin: 0; padding: 0; }
 /* Ships patrol their grid: cosmos.ts moves each spot a step along a grid axis at a time (the
    transform), turning the hull to its heading (--heading). */
 .outer__spot { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: 0; height: 0; transition: transform 2.6s var(--ease-in-out); }
@@ -262,7 +290,7 @@ body { margin: 0; min-height: 100vh; }
    get the plane, not the Registro; without JS both stay, so nothing is out of reach. */
 @media (max-width: 859px) {
   .cosmos { background-image: none; display: grid; align-content: center; min-height: clamp(340px, 50svh, 480px); }
-  .cosmos__field, .cosmos__warp, .cosmos__bar, .cosmos__upper, .cosmos__space--outer, .cosmos__tabs, .bridge__ghosts { display: none; }
+  .cosmos__field, .cosmos__warp, .cosmos__bar, .cosmos__viewport, .cosmos__tabs { display: none; }
   .cosmos__intro { padding-block: var(--space-7); }
   .chart__lead { display: none; }
 }

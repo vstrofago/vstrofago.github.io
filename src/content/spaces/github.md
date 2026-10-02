@@ -5,6 +5,6 @@ name_es: "GitHub"
 handle: "github.com/vstrofago"
 url: https://github.com/vstrofago
 ship: fighter
-x: 36
-y: 64
+x: 24
+y: 72
 ---

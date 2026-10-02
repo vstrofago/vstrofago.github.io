@@ -1,13 +1,16 @@
 ---
-// Wide screens: the page doesn't scroll. The plane is a map, dragged sideways with the mouse
-// (or a trackpad, the wheel, the arrow keys, or the tabs at its foot, which glide there): on the
-// left my space (a short welcome, the coordinate readout and magnitudes, then every project a
-// star, sized by magnitude (live bright, in progress pulsing, soon faint), joined into the three
-// fixed constellations of their field: Automata, Systemis, Creavis); in the middle an
-// Einstein–Rosen bridge, the grid's rows converging into a mouth, through a wireframe throat and
-// out of another; on the right, the outer spaces (the links), each flying its pixel ship.
-// cosmos.ts draws the grid and the bridge. Stars and spaces are one file each in src/content/.
-// Stars open their card (Fichas.astro); without JS they link to the Registro rows, and both
+// Wide screens: the page doesn't scroll. Under the nav, the welcome and the readout stay put;
+// under them the plane is a map, dragged sideways with the mouse (or a trackpad, the wheel,
+// the arrow keys, or the tabs at its foot, which glide there). On the left, my space: every
+// featured or still-forming project a star, sized by magnitude (live bright, in progress
+// pulsing, soon faint), joined into the constellation of its field (Automata, Systemis,
+// Creavis), and under the −20° line the outer spaces (the links), each a pixel ship on patrol.
+// In the middle an Einstein–Rosen bridge: the grid's rows converge into a mouth, run through a
+// wireframe throat and flare out of another. On the right, the archive: the archived projects
+// as still planets on display. When the map crosses the bridge, the welcome rewrites itself,
+// like a terminal, into the archive's. cosmos.ts draws the grid and the bridge and moves the map.
+// Stars, planets and ships are one file each in src/content/; they open their card
+// (Fichas.astro) or go to their link. Without JS the stars link to the Registro rows, and both
 // spaces stack on one scrolling page, so nothing is out of reach.
 // Under 860px only the welcome shows here: the Registro (Hud.astro) is the view on phones.
 // Behind the welcome there, a sketch of the same sky (grid, constellation lines, stars and some
@@ -18,13 +21,17 @@ import Ship from './ds/Ship.astro';
 import { useTranslations, type Lang } from '../i18n/ui';
 import { projects, placeholder, constellations } from '../data/projects';
 import { spaces } from '../data/spaces';
-import { coordsOf, magnitude, bridge } from '../data/sky';
+import { coordsOf, magnitude, bridge, fields } from '../data/sky';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
 
 const stars = projects.map((p) => ({ p, id: p.catalog, at: p.place }));
+const here = stars.filter((s) => !s.p.archived);
+// The archive is a display case: its planets in one row across the middle, in catalog order,
+// evenly spaced (a file's x / y place its star in my space, not here).
+const archived = stars.filter((s) => s.p.archived).map((s, i, all) => ({ ...s, spot: { x: ((i + 1) / (all.length + 1)) * 100, y: 40 } }));
 const byId = new Map(stars.map((s) => [s.p.id, s.at]));
 const lines = constellations.flatMap((c) =>
   c.members.slice(1).flatMap((m, i) => {
@@ -46,7 +53,12 @@ const dust = Array.from({ length: 56 }, (_, i) => {
   };
   return { x: +(r(1) * 100).toFixed(2), y: +(r(2) * 100).toFixed(2), o: +(0.25 + r(3) * 0.6).toFixed(2) };
 });
+const planetLabel = { live: t('planet.live'), wip: t('planet.wip'), soon: t('planet.soon') };
 const outer = spaces.filter((s) => s.url);
+const words = {
+  here: { title: t('chart.title'), lead: t('chart.lead') },
+  archive: { title: t('archive.title'), lead: t('archive.lead') },
+};
 ---
 <section class="cosmos" aria-labelledby="chart-title" data-cosmos data-parallax data-bridge={JSON.stringify(bridge)} style={`--bridge:${bridge.width}`}>
   <div class="cosmos__field" data-parallax-layer aria-hidden="true">
@@ -65,15 +77,14 @@ const outer = spaces.filter((s) => s.url);
     </ul>
   </div>
 
-  <div class="cosmos__world" data-world>
-  <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
-
-  <div class="cosmos__space cosmos__space--here" id="here" data-space="here" tabindex="-1" aria-labelledby="chart-title">
+  <div class="cosmos__head" data-words={JSON.stringify(words)}>
     <div class="cosmos__intro container" data-reveal>
-      <h1 id="chart-title" class="display chart__title">{t('chart.title')}</h1>
-      <p class="text text--body-l text--muted chart__lead">{t('chart.lead')}</p>
+      <h1 id="chart-title" class="display chart__title">
+        <span class="visually-hidden">{words.here.title}</span>
+        <span aria-hidden="true" data-transmute="title">{words.here.title}</span>
+      </h1>
+      <p class="text text--body-l text--muted chart__lead" data-transmute="lead">{words.here.lead}</p>
     </div>
-
     <div class="cosmos__bar container" aria-hidden="true">
       <p class="chart__readout" data-readout-out data-idle={t('chart.hint')}>{t('chart.hint')}</p>
       <ul class="chart__legend">
@@ -82,67 +93,101 @@ const outer = spaces.filter((s) => s.url);
         <li><span class="star--soon"><Mark size={8} /></span>{t('status.soon')}</li>
       </ul>
     </div>
-
-    <div class="cosmos__upper" data-sky>
-      <svg class="chart__grid chart__grid--lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
-      </svg>
-      <ul class="chart__constellations" aria-hidden="true">
-        {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
-      </ul>
-      <ol class="chart__stars" aria-label={t('chart.stars')}>
-        {stars.map(({ p, id, at }) => (
-          <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
-            <a
-              class="star__link"
-              href={`#${id.toLowerCase()}`}
-              data-star={id.toLowerCase()}
-              data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
-            >
-              <span class="star__glyph"><Mark size={size[p.status]} /></span>
-              <span class="star__label">
-                <span class="star__id">{id}</span>
-                <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
-              </span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </div>
-
   </div>
 
-  <div class="cosmos__bridge" aria-hidden="true" data-bridge-zone></div>
+  <div class="cosmos__viewport">
+  <div class="cosmos__world" data-world>
+    <svg class="cosmos__warp" aria-hidden="true" focusable="false" data-warp></svg>
 
-  <div class="cosmos__space cosmos__space--outer" id="outer" data-space="outer" data-outer tabindex="-1" aria-labelledby="outer-title">
-    <div class="cosmos__intro container">
-      <h2 id="outer-title" class="display chart__title">{t('outer.title')}</h2>
-      <p class="text text--body-l text--muted chart__lead">{t('outer.lead')}</p>
+    <div class="cosmos__space cosmos__space--here" id="here" data-space="here" tabindex="-1" aria-labelledby="chart-title">
+      <div class="cosmos__upper" data-sky>
+        <svg class="chart__grid chart__grid--lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          {lines.map(({ a, b }) => <line class="chart__line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} vector-effect="non-scaling-stroke" />)}
+        </svg>
+        <ul class="chart__constellations" aria-hidden="true">
+          {constellations.map((c) => <li style={`--x:${c.at.x};--y:${c.at.y}`}>{c.name}</li>)}
+        </ul>
+        <ol class="chart__stars" aria-label={t('chart.stars')}>
+          {here.map(({ p, id, at }) => (
+            <li class:list={['star', `star--${p.status}`, `star--${at.side}`]} style={`--x:${at.x};--y:${at.y}`}>
+              <a
+                class="star__link"
+                href={`#${id.toLowerCase()}`}
+                data-star={id.toLowerCase()}
+                data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${t('chart.magnitude')} ${magnitude[p.status]} · ${coordsOf(at.x, at.y)}`}
+              >
+                <span class="star__glyph"><Mark size={size[p.status]} /></span>
+                <span class="star__label">
+                  <span class="star__id">{id}</span>
+                  <span class="star__name">{(p.title ?? placeholder.title)[lang]}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+        <!-- The outer spaces: under the −20° line, where no project sits, each ship on patrol. -->
+        <ul class="outer__field" id="outer" aria-label={t('nav.elsewhere')}>
+          {outer.map((s, i) => (
+            <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
+              <a class="outer__link" href={s.url} rel="noopener" data-outer-exit data-readout={`CH ${String(i + 1).padStart(2, '0')} · ${s.name[lang]} · ${s.handle}`}>
+                <Ship kind={s.ship} size={18} class="outer__ship" />
+                <span class="outer__label">
+                  <span class="outer__name">{s.name[lang]}</span>
+                  <span class="outer__handle">{s.handle}</span>
+                </span>
+                <Icon name="arrow-up-right" size={14} />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
-    <ul class="outer__field" aria-labelledby="outer-title">
-      {outer.map((s) => (
-        <li class="outer__spot" style={`--x:${s.at.x};--y:${s.at.y}`}>
-          <a class="outer__link" href={s.url} rel="noopener" data-outer-exit>
-            <Ship kind={s.ship} size={18} class="outer__ship" />
-            <span class="outer__label">
-              <span class="outer__name">{s.name[lang]}</span>
-              <span class="outer__handle">{s.handle}</span>
-            </span>
-            <Icon name="arrow-up-right" size={14} />
-          </a>
-        </li>
-      ))}
-    </ul>
-  </div>
 
-  <div class="bridge__ghosts" aria-hidden="true">
-    {outer.map(() => <span class="bridge__ghost"><Mark size={7} /></span>)}
+    <div class="cosmos__bridge" aria-hidden="true" data-bridge-zone></div>
+
+    <div class="cosmos__space cosmos__space--archive" id="archive" data-space="archive" tabindex="-1" aria-labelledby="archive-title">
+      <h2 id="archive-title" class="cosmos__plane-title st-label">{t('space.archive')}</h2>
+      <div class="cosmos__upper cosmos__upper--archive" data-sky>
+        <ol class="archive__bodies">
+          {archived.map(({ p, id, at, spot }) => (
+            <li class="exhibit" style={`--x:${spot.x};--y:${spot.y}`}>
+              <a
+                class="exhibit__link"
+                href={`#${id.toLowerCase()}`}
+                data-star={id.toLowerCase()}
+                data-readout={`${id} · ${(p.title ?? placeholder.title)[lang]} · ${planetLabel[p.status]}`}
+              >
+                <canvas
+                  class="planet exhibit__planet"
+                  aria-hidden="true"
+                  data-planet={p.id}
+                  data-status={p.status}
+                  data-kind={at.planet.kind}
+                  data-ring={at.planet.ring ? '' : undefined}
+                  data-moon={at.planet.moon ? '' : undefined}
+                  data-tilt={at.planet.tilt ?? 0}
+                  data-block-size="2"
+                ></canvas>
+                <span class="exhibit__label">
+                  <span class="star__id">{id}</span>
+                  <span class="exhibit__name">{(p.title ?? placeholder.title)[lang]}</span>
+                  <span class="exhibit__meta">{p.category[lang]} · {fields[p.field].name}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+
+    <div class="bridge__ghosts" aria-hidden="true">
+      {archived.map(() => <span class="bridge__ghost"><Mark size={7} /></span>)}
+    </div>
   </div>
   </div>
 
   <div class="cosmos__tabs" data-map-tabs hidden>
-    <span class="cosmos__hint" aria-hidden="true">{t('map.hint')}</span>
     <button class="hud__tab" type="button" data-map-go="here" aria-label={`${t('map.go')}: ${t('space.here')}`}>{t('space.here')}</button>
-    <button class="hud__tab" type="button" data-map-go="outer" aria-label={`${t('map.go')}: ${t('nav.elsewhere')}`}>{t('nav.elsewhere')}</button>
+    <button class="hud__tab" type="button" data-map-go="archive" aria-label={`${t('map.go')}: ${t('space.archive')}`}>{t('space.archive')}</button>
   </div>
 </section>
